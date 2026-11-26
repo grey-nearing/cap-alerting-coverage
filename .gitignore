@@ -1,0 +1,53 @@
+# Python & packaging
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Secrets & environment
+.env
+.env.*
+*.pem
+*.key
+
+# Raw upstream datasets, Zenodo caches, & generated outputs
+work_data/
+zenodo_archive/
+zenodo_data/
+zenodo_cache/
+data_raw/
+out_figures/
+out_results/
+exports_*/
+*.parquet
+*.geoparquet
+*.gpkg
+*.zarr/
+*.npz
+*.npy
+*.nc
+*.tif
+*.tiff
+*.ndjson
+*.ndjson.gz
+*.dump
+*.sqlite
+*.db
+
+# OS artifacts
+.DS_Store
+Thumbs.db

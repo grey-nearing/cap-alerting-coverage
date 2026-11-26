@@ -1,0 +1,172 @@
+cff-version: 1.2.0
+message: "If you use this software or the associated benchmark archive, please cite it using the metadata below."
+type: software
+title: "Global flood models can close nearly two-thirds of the warning gap: Reproducible CAP & Global Flood Forecast Benchmark"
+version: 1.0.0
+date-released: "2026-11-26"
+license: Apache-2.0
+repository-code: "https://github.com/grey-nearing/cap-alerting-coverage"
+url: "https://github.com/grey-nearing/cap-alerting-coverage"
+keywords:
+  - flood forecasting
+  - early warning systems
+  - Common Alerting Protocol
+  - hydrology
+  - global flood models
+  - disaster risk reduction
+authors:
+  - given-names: Justin
+    family-names: Ginnetti
+    affiliation: "Google, Zurich, Switzerland"
+  - given-names: Juliet
+    family-names: Rothenberg
+    affiliation: "Google, Mountain View, CA, USA"
+  - given-names: Shmulik
+    family-names: Fronman
+    affiliation: "Google, London, UK"
+  - given-names: Michelle
+    family-names: Ng
+    affiliation: "Google, Cambridge, MA, USA"
+  - given-names: Oleg
+    family-names: Zlydenko
+    affiliation: "Google, Tel Aviv, Israel"
+  - given-names: Martin
+    family-names: Gauch
+    affiliation: "Google, Zurich, Switzerland"
+  - given-names: Daniel
+    family-names: Klotz
+    affiliation: "Google, Vienna, Austria"
+  - given-names: Patrick
+    family-names: Ebel
+    affiliation: "Google, Zurich, Switzerland"
+  - given-names: Asher
+    family-names: Metzger
+    affiliation: "Google, Tel Aviv, Israel"
+  - given-names: Hadas
+    family-names: Fester
+    affiliation: "Google, Tel Aviv, Israel"
+  - given-names: Avishag
+    family-names: Shapira
+    affiliation: "Google, Tel Aviv, Israel"
+  - given-names: Dem
+    family-names: Gerolemou
+    affiliation: "Google, London, UK"
+  - given-names: Assaf
+    family-names: Shmuel
+    affiliation: "Google, Tel Aviv, Israel"
+  - given-names: Ido
+    family-names: Zemach
+    affiliation: "Google, Tel Aviv, Israel"
+  - given-names: Rotem
+    family-names: Mayo
+    affiliation: "Google, Tel Aviv, Israel"
+  - given-names: Roy
+    family-names: Nadler
+    affiliation: "Google, Tel Aviv, Israel"
+  - given-names: Yonatan
+    family-names: Nakar
+    affiliation: "Google, Tel Aviv, Israel"
+  - given-names: Assaf
+    family-names: Mauda
+    affiliation: "Google, Tel Aviv, Israel"
+  - given-names: Matheus
+    family-names: Vervloet
+    affiliation: "Google, San Francisco, CA, USA"
+  - given-names: Karan
+    family-names: Ruparell
+    affiliation: "Google, Zurich, Switzerland; Department of Meteorology, University of Reading, Reading, UK"
+  - given-names: Frederik
+    family-names: Kratzert
+    affiliation: "Google, Vienna, Austria"
+  - given-names: Ben
+    family-names: Feinstein
+    affiliation: "Google, Tel Aviv, Israel"
+  - given-names: Deborah
+    family-names: Cohen
+    affiliation: "Google, Tel Aviv, Israel"
+  - given-names: Aviya
+    family-names: Goldstein
+    affiliation: "Google, Tel Aviv, Israel"
+  - given-names: Gila
+    family-names: Loike
+    affiliation: "Google, Tel Aviv, Israel"
+  - given-names: Dai
+    family-names: Yamazaki
+    affiliation: "Institute of Industrial Science, The University of Tokyo, Tokyo, Japan"
+  - given-names: Lisie
+    family-names: Lillianfeld
+    affiliation: "Google, Cambridge, MA, USA"
+  - given-names: Emily
+    family-names: Reinstein
+    affiliation: "Google, New York, NY, USA"
+  - given-names: Adam
+    family-names: Boulanger
+    affiliation: "Google, Mountain View, CA, USA"
+  - given-names: Grey
+    family-names: Nearing
+    affiliation: "Google, Zurich, Switzerland"
+preferred-citation:
+  type: article
+  title: "Global flood models can close nearly two-thirds of the warning gap"
+  year: 2026
+  authors:
+    - given-names: Justin
+      family-names: Ginnetti
+    - given-names: Juliet
+      family-names: Rothenberg
+    - given-names: Shmulik
+      family-names: Fronman
+    - given-names: Michelle
+      family-names: Ng
+    - given-names: Oleg
+      family-names: Zlydenko
+    - given-names: Martin
+      family-names: Gauch
+    - given-names: Daniel
+      family-names: Klotz
+    - given-names: Patrick
+      family-names: Ebel
+    - given-names: Asher
+      family-names: Metzger
+    - given-names: Hadas
+      family-names: Fester
+    - given-names: Avishag
+      family-names: Shapira
+    - given-names: Dem
+      family-names: Gerolemou
+    - given-names: Assaf
+      family-names: Shmuel
+    - given-names: Ido
+      family-names: Zemach
+    - given-names: Rotem
+      family-names: Mayo
+    - given-names: Roy
+      family-names: Nadler
+    - given-names: Yonatan
+      family-names: Nakar
+    - given-names: Assaf
+      family-names: Mauda
+    - given-names: Matheus
+      family-names: Vervloet
+    - given-names: Karan
+      family-names: Ruparell
+    - given-names: Frederik
+      family-names: Kratzert
+    - given-names: Ben
+      family-names: Feinstein
+    - given-names: Deborah
+      family-names: Cohen
+    - given-names: Aviya
+      family-names: Goldstein
+    - given-names: Gila
+      family-names: Loike
+    - given-names: Dai
+      family-names: Yamazaki
+    - given-names: Lisie
+      family-names: Lillianfeld
+    - given-names: Emily
+      family-names: Reinstein
+    - given-names: Adam
+      family-names: Boulanger
+    - given-names: Grey
+      family-names: Nearing

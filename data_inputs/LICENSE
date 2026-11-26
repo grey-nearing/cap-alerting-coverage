@@ -1,0 +1,27 @@
+# Data Inputs Licensing & Attribution
+
+The reference files in `data_inputs/` are governed by the following terms:
+
+1. **Author-curated reference tables and keyword lists (CC-BY-4.0):**
+   - `Supplementary_Data_1_Global_Alerting_Authorities_Audit_185_Jurisdictions.csv`
+   - `unified_multilingual_keyword_filters.csv`
+   - `annex_inclusion_keywords.txt`
+   - `annex_exclusion_keywords.txt`
+
+   These files are released under the **Creative Commons Attribution 4.0 International (CC-BY-4.0)**
+   license (https://creativecommons.org/licenses/by/4.0/).
+
+2. **Administrative country boundaries (Public Domain):**
+   - `ne_110m_admin_0_countries.geojson`
+
+   Made with Natural Earth (https://www.naturalearthdata.com/). Free vector and raster map data
+   in the public domain under Natural Earth's terms of use
+   (https://www.naturalearthdata.com/about/terms-of-use/).
+
+3. **Upstream dataset terms notice:**
+   - Derived benchmark products stored in the companion Zenodo archive remain subject to applicable
+     upstream provider terms (IDMC GIDD CC BY-NC-SA 3.0 IGO, CRED EM-DAT / IFRC Montandon
+     non-commercial research terms, Filtered Alert Hub / Alert-Hub.Org CIC data-access agreement,
+     IFRC Alert Hub non-commercial research terms, GADM v4.1 non-commercial / no-redistribution
+     terms, Copernicus Emergency Management Service GloFAS license, and GEOGLOWS v2 CC-BY-4.0).
+     See `docs/DATA_GOVERNANCE.md` for full provenance and required attributions.

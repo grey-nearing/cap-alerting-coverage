@@ -1,0 +1,31 @@
+# cap-alerting-coverage
+
+> Reproducible Apache-2.0 benchmark code and verification suite for *"Global flood models can close nearly two-thirds of the warning gap"* (2026). Evaluates official Common Alerting Protocol (CAP) flood warnings against Google Distributed Hydrological Model (DHM), Google Flash Flood Model (FFM), Copernicus GloFAS v5, and GEOGLOWS v2 across 150 evaluated (185 audited) jurisdictions over 2021–2025.
+
+## Agent & Engineering Guides
+- [AGENTS.md](AGENTS.md): Complete machine-readable pipeline DAG, module ownership map, strict I/O schemas, mathematical invariants, verification commands, and clean-room guardrails.
+- [README.md](README.md): Human project overview, headline findings table, and Tier-1 / Tier-2 quickstarts.
+- [docs/REPRODUCIBILITY.md](docs/REPRODUCIBILITY.md): Step-by-step Tier-1 Zenodo reproduction, recomputed vs. pass-through file map, and Tier-2 upstream extraction runbook.
+- [docs/DATA_GOVERNANCE.md](docs/DATA_GOVERNANCE.md): Dataset provenance, Apache-2.0 / CC-BY-4.0 licensing, required upstream attributions, and strict non-redistribution boundaries.
+- [docs/METHODS_ALIGNMENT.md](docs/METHODS_ALIGNMENT.md): Transparent technical alignment notes between implemented code and manuscript text.
+
+## Core Tier-1 Modules
+- [src/cap_alerting_coverage/config.py](src/cap_alerting_coverage/config.py): Constants, cohorts, thresholds, ISO-3 unification, wheel-aware `default_data_inputs_dir`, and `ProjectPaths`.
+- [src/cap_alerting_coverage/scoring.py](src/cap_alerting_coverage/scoring.py): Vectorized benchmark scoring, valid-date forecast alignment, warning episode collapsing, PR curves, Pareto front, lead-time sweeps, and sensitivity audits.
+- [src/cap_alerting_coverage/manuscript_outputs.py](src/cap_alerting_coverage/manuscript_outputs.py): Tables 1–2 (exact McNemar), Extended Data Tables 1 & 3–6, Figures 1–4, and Extended Data Figures 1–5.
+- [src/cap_alerting_coverage/gauge_verification.py](src/cap_alerting_coverage/gauge_verification.py): Stream-gauge NSE comparison and Table 2 compilation (Tier-1 pass-through for raw gauge metrics + recomputed catalog metrics; Tier-2 raw gauge mode).
+- [src/cap_alerting_coverage/validation_audit.py](src/cap_alerting_coverage/validation_audit.py): Deterministic de-identified N=400 CAP validation tabulation (Wald/Wilson/Clopper–Pearson CIs; explicit input file required).
+- [src/cap_alerting_coverage/stats_utils.py](src/cap_alerting_coverage/stats_utils.py): Exact binomial McNemar, Clopper–Pearson, Wald, two-proportion z-test, deterministic bootstrap utilities (`n_resamples=1000, seed=42`), and Bulletin 17C LP3 fitting.
+- [src/cap_alerting_coverage/schemas.py](src/cap_alerting_coverage/schemas.py): Strict schema validators and non-redistribution privacy guards.
+- [src/cap_alerting_coverage/zenodo_fetch.py](src/cap_alerting_coverage/zenodo_fetch.py): Zenodo REST downloader, zip-slip-safe extractor, and SHA-256 manifest verifier.
+- [src/cap_alerting_coverage/cli.py](src/cap_alerting_coverage/cli.py): `cap-gap` / `cap-alerting-coverage` CLI (`reproduce-tier1`, `verify-parity`, `build-figures`, `verify-zenodo`, `fetch-zenodo`, `audit-validation`, `--version`).
+
+## Tier-2 Upstream Modules & Reference Scripts
+- [src/cap_alerting_coverage/ingestion/](src/cap_alerting_coverage/ingestion/): Portable SQL DDL (`schema.sql`), SQLAlchemy connector, OID/ISO-3 resolver, Alert Hub / IDMC ingestors, provider-agnostic translator.
+- [src/cap_alerting_coverage/pipeline/](src/cap_alerting_coverage/pipeline/): Parameterized upstream extractors (`01`, `02`, `03a`–`03d`, `09`) and pure-Python Blosc decoder.
+- [scripts/](scripts/): Numbered CLI entrypoints (`01_build_catalogs.py` through `09_build_groundsource_catalog_b.py`).
+
+## Verification & Interactive Reproduction
+- [tests/](tests/): Offline unit tests, synthetic Tier-1 integration suite, Zenodo parity suite (`-m zenodo`), and CI clean-room privacy guardrails.
+- [notebooks/reproduce_manuscript_results.ipynb](notebooks/reproduce_manuscript_results.ipynb): Clean Tier-1 reproduction notebook targeting `CAP_GAP_ZENODO_DIR`.
+- [data_inputs/](data_inputs/): Audited 185-jurisdiction table, multilingual keyword filters, Natural Earth 1:110m boundaries, and `data_inputs/LICENSE`.

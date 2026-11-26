@@ -1,0 +1,73 @@
+flood
+rain
+storm
+cyclone
+typhoon
+hurricane
+surge
+water
+inundat
+overflow
+wet
+precipitation
+thunderstorm
+hydrolog
+flash
+rising
+dam
+inondation
+pluie
+pluie forte
+précipitation
+orage
+ouragan
+tempête
+crue
+déluge
+lluvia
+lluvia intensa
+precipitación
+tormenta
+ciclón
+huracán
+crecida
+diluvio
+наводнение
+дождь
+сильный дождь
+осадки
+шторм
+циклон
+ураган
+паводок
+ливень
+затопление
+洪水
+雨
+大雨
+暴雨
+降水
+降雨
+台风
+飓风
+淹没
+内涝
+فيضان
+مطر
+أمطار غزيرة
+تساقط الأمطار
+عاصفة
+إعصار
+طوفان
+tulva
+sade
+rankkasade
+sademäärä
+myrsky
+pyörremyrsky
+flom
+regn
+kraftig regn
+nedbør
+storm
+orkan
