@@ -19,6 +19,11 @@ from cap_alerting_coverage.schemas import (
 from cap_alerting_coverage.stats_utils import (
     bootstrap_proportion_ci,
     clopper_pearson_ci,
+    cluster_bootstrap_proportion_ci,
+    cluster_design_effect,
+    country_clustered_coverage_inference,
+    country_paired_wilcoxon,
+    fisher_exact_2x2,
     fit_lp3_return_periods,
     format_p_value,
     mcnemar_exact_p,
@@ -111,6 +116,58 @@ def test_bootstrap_and_paired_bootstrap_cis():
 
     d_est, d_lo, d_hi = paired_bootstrap_diff_ci(base, cand, n_resamples=500, seed=7, weights=weights)
     assert d_lo > 0.0 and d_lo <= d_est <= d_hi
+
+
+def test_fisher_exact_deff_country_wilcoxon_and_clustered_cis():
+    # Disjoint N=400 v4_reviewed filter validation: 208/235 selected vs 12/165 excluded
+    odds, p_fisher = fisher_exact_2x2(208, 235, 12, 165)
+    assert odds > 50.0
+    assert abs(p_fisher - 8.289e-66) < 1e-67
+
+    # Strongly clustered binary indicators across 20 countries (100% in half, 0% in half)
+    countries = np.repeat([f"C{i:02d}" for i in range(20)], 10)
+    base = np.concatenate([np.ones(100), np.zeros(100)])
+    cand = np.concatenate([np.ones(100), np.tile([1, 1, 1, 1, 1, 1, 1, 0, 0, 0], 10)])
+    pop = np.linspace(100.0, 5000.0, len(countries))
+
+    deff, n_eff = cluster_design_effect(countries, base)
+    assert deff > 5.0
+    assert abs(n_eff - len(countries) / deff) < 1e-9
+
+    est, lo, hi = cluster_bootstrap_proportion_ci(countries, base, n_resamples=500, seed=42)
+    assert abs(est - 0.5) < 1e-9
+    assert 0.0 <= lo < est < hi <= 1.0
+    # Deterministic replay with identical seed
+    assert cluster_bootstrap_proportion_ci(countries, base, n_resamples=500, seed=42) == (est, lo, hi)
+
+    w_res = country_paired_wilcoxon(countries, base, cand)
+    assert w_res["n_countries"] == 20
+    assert w_res["n_improved"] == 10
+    assert w_res["n_tied"] == 10
+    assert w_res["n_declined"] == 0
+    assert abs(float(w_res["mean_pp_gain"]) - 35.0) < 1e-9
+    assert float(w_res["wilcoxon_p"]) < 0.01
+
+    # Identical arrays yield p=1.0 cleanly without error
+    tied_res = country_paired_wilcoxon(countries, base, base)
+    assert tied_res["wilcoxon_p"] == 1.0 and tied_res["n_tied"] == 20
+
+    inf = country_clustered_coverage_inference(
+        country_ids=countries,
+        baseline=base,
+        candidate=cand,
+        weights=pop,
+        n_resamples=500,
+        seed=42,
+    )
+    assert inf["n_events"] == 200
+    assert inf["n_countries"] == 20
+    assert inf["baseline_deff"] > 5.0
+    assert inf["baseline_ci_low_pct"] <= inf["baseline_pct"] <= inf["baseline_ci_high_pct"]
+    assert inf["candidate_ci_low_pct"] <= inf["candidate_pct"] <= inf["candidate_ci_high_pct"]
+    assert inf["gap_closed_ci_low_pct"] <= inf["gap_closed_pct"] <= inf["gap_closed_ci_high_pct"]
+    assert inf["pop_baseline_ci_low_pct"] <= inf["pop_baseline_pct"] <= inf["pop_baseline_ci_high_pct"]
+    assert inf["pop_candidate_ci_low_pct"] <= inf["pop_candidate_pct"] <= inf["pop_candidate_ci_high_pct"]
 
 
 def test_schema_and_privacy_validators_catch_violations():

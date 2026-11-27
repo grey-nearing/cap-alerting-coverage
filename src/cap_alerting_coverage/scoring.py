@@ -287,12 +287,151 @@ def prepare_catalog_slice(
     }
 
 
+def _build_fcover_bounds(
+    n_g: int,
+    ev_g: np.ndarray,
+    ev_w0: np.ndarray,
+    ev_w1: np.ndarray,
+) -> np.ndarray:
+    """Build ``(n_g, D_TOTAL)`` boolean mask marking Admin-1 days in ``[ev_w0, ev_w1]`` inclusive."""
+    diff = np.zeros((n_g, D_TOTAL + 1), dtype=np.int32)
+    if len(ev_g) > 0:
+        np.add.at(diff, (ev_g, ev_w0), 1)
+        np.add.at(diff, (ev_g, ev_w1 + 1), -1)
+    return np.cumsum(diff[:, :D_TOTAL], axis=1) > 0
+
+
 def build_fcover(n_g: int, cat_slice: dict[str, Any]) -> np.ndarray:
     """Build ``(n_g, D_TOTAL)`` boolean mask marking all Admin-1 days inside ``[ev_w0, ev_w1]``."""
-    diff = np.zeros((n_g, D_TOTAL + 1), dtype=np.int32)
-    np.add.at(diff, (cat_slice["ev_g"], cat_slice["ev_w0"]), 1)
-    np.add.at(diff, (cat_slice["ev_g"], cat_slice["ev_w1"] + 1), -1)
-    return np.cumsum(diff[:, :D_TOTAL], axis=1) > 0
+    return _build_fcover_bounds(n_g, cat_slice["ev_g"], cat_slice["ev_w0"], cat_slice["ev_w1"])
+
+
+def build_pre_onset_fcover(n_g: int, cat_slice: dict[str, Any]) -> np.ndarray:
+    """Build ``(n_g, D_TOTAL)`` boolean mask marking Admin-1 days in ``[ev_w0, ev_s]`` inclusive."""
+    w0 = np.clip(cat_slice["ev_w0"], 0, D_TOTAL - 1)
+    w1 = np.clip(cat_slice["ev_s"], 0, D_TOTAL - 1)
+    keep = w1 >= w0
+    return _build_fcover_bounds(n_g, cat_slice["ev_g"][keep], w0[keep], w1[keep])
+
+
+def build_strictly_before_fcover(n_g: int, cat_slice: dict[str, Any]) -> np.ndarray:
+    """Build ``(n_g, D_TOTAL)`` boolean mask marking Admin-1 days in ``[ev_w0, ev_s - 1]`` inclusive."""
+    ev_s = cat_slice["ev_s"]
+    w0 = np.clip(cat_slice["ev_w0"], 0, D_TOTAL - 1)
+    keep = (ev_s > 0) & (ev_s > w0)
+    w1 = np.clip(ev_s[keep] - 1, 0, D_TOTAL - 1)
+    return _build_fcover_bounds(n_g, cat_slice["ev_g"][keep], w0[keep], w1)
+
+
+def _collapse_and_score_episodes(
+    flat: np.ndarray,
+    g_idx: np.ndarray,
+    w0: int,
+    win_len: int,
+    fcover: np.ndarray,
+    max_gap: int = 2,
+) -> tuple[int, int]:
+    """Collapse sorted flat warning indices into episodes and count hits against ``fcover``."""
+    n_warn_days = len(flat)
+    gi_sub, di_rel = np.divmod(flat, win_len)
+    gi = g_idx[gi_sub]
+    di = di_rel + w0
+    is_new_ep = np.empty(n_warn_days, dtype=bool)
+    is_new_ep[0] = True
+    is_new_ep[1:] = (gi_sub[1:] != gi_sub[:-1]) | ((di_rel[1:] - di_rel[:-1]) > (max_gap + 1))
+
+    ep_ids = np.cumsum(is_new_ep) - 1
+    n_ep = int(ep_ids[-1]) + 1
+    day_hit = fcover[gi, di]
+    ep_tp = np.zeros(n_ep, dtype=bool)
+    np.logical_or.at(ep_tp, ep_ids, day_hit)
+    return n_ep, int(ep_tp.sum())
+
+
+def score_episode_precision(
+    w_full: np.ndarray,
+    cat_slice: dict[str, Any],
+    fcover: np.ndarray,
+    g_mask: np.ndarray,
+    max_gap: int = 2,
+) -> tuple[int, int, float]:
+    """Score warning-episode overlap precision against an arbitrary ``fcover`` mask."""
+    w0, w1 = cat_slice["w_min"], cat_slice["b1"]
+    win_len = w1 - w0 + 1
+    g_idx = np.flatnonzero(g_mask)
+    if len(g_idx) == 0:
+        return 0, 0, np.nan
+    flat = np.flatnonzero(w_full[g_idx, w0 : w1 + 1])
+    if len(flat) == 0:
+        return 0, 0, np.nan
+    n_ep, tp_ep = _collapse_and_score_episodes(flat, g_idx, w0, win_len, fcover, max_gap=max_gap)
+    return n_ep, tp_ep, round(100.0 * tp_ep / max(1, n_ep), 3)
+
+
+def score_event_window_rules(
+    w_full: np.ndarray,
+    cat_slice: dict[str, Any],
+    fcov_primary: np.ndarray,
+    fcov_pre: np.ndarray,
+    fcov_before: np.ndarray,
+    g_mask: np.ndarray,
+    cat_name: str,
+    variant_name: str,
+    lead_n: int = 7,
+    max_gap: int = 2,
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """Score Primary, PreOnset, and StrictlyBefore event-window variants for one alert matrix."""
+    n_g = w_full.shape[0]
+    ev_g, ev_s, ev_w0 = cat_slice["ev_g"], cat_slice["ev_s"], cat_slice["ev_w0"]
+    r_prim = score_boolean_matrix(w_full, cat_slice, fcov_primary, g_mask, max_gap=max_gap)
+
+    w_masked = w_full & g_mask[:, None]
+    prefix = np.zeros((n_g, D_TOTAL + 1), dtype=np.int32)
+    np.cumsum(w_masked, axis=1, out=prefix[:, 1:])
+    tp_before = int(((prefix[ev_g, ev_s] - prefix[ev_g, np.maximum(0, np.minimum(ev_w0, ev_s))]) > 0).sum())
+
+    n_ep_pre, tp_ep_pre, prec_pre = score_episode_precision(w_full, cat_slice, fcov_pre, g_mask, max_gap=max_gap)
+    n_ep_before, tp_ep_before, prec_before = score_episode_precision(
+        w_full, cat_slice, fcov_before, g_mask, max_gap=max_gap
+    )
+    if n_ep_pre != r_prim["n_episodes"] or n_ep_before != r_prim["n_episodes"]:
+        raise AssertionError("Episode count mismatch across Event_Window_Rule variants.")
+
+    metric_keys = ("n_events", "tp_ev", "recall_pct", "n_episodes", "tp_ep", "precision_pct")
+    rows = [
+        {
+            "audit_type": "Event_Window_Rule",
+            "catalog": cat_name,
+            "lead_N": lead_n,
+            "variant": f"{variant_name}__Primary_[start-{lead_n}d,end]",
+            **{k: r_prim[k] for k in metric_keys},
+        },
+        {
+            "audit_type": "Event_Window_Rule",
+            "catalog": cat_name,
+            "lead_N": lead_n,
+            "variant": f"{variant_name}__PreOnset_[start-{lead_n}d,start]",
+            "n_events": r_prim["n_events"],
+            "tp_ev": r_prim["tp_pre"],
+            "recall_pct": r_prim["pre_recall_pct"],
+            "n_episodes": r_prim["n_episodes"],
+            "tp_ep": tp_ep_pre,
+            "precision_pct": prec_pre,
+        },
+        {
+            "audit_type": "Event_Window_Rule",
+            "catalog": cat_name,
+            "lead_N": lead_n,
+            "variant": f"{variant_name}__StrictlyBefore_[start-{lead_n}d,start-1d]",
+            "n_events": r_prim["n_events"],
+            "tp_ev": tp_before,
+            "recall_pct": round(100.0 * tp_before / max(1, r_prim["n_events"]), 3),
+            "n_episodes": r_prim["n_episodes"],
+            "tp_ep": tp_ep_before,
+            "precision_pct": prec_before,
+        },
+    ]
+    return r_prim, rows
 
 
 def score_boolean_matrix(
@@ -372,20 +511,7 @@ def score_boolean_matrix(
     else:
         tp_ev, tp_pre, pop_rec = 0, 0, 0.0
 
-    gi_sub, di_rel = np.divmod(flat, win_len)
-    gi = g_idx[gi_sub]
-    di = di_rel + w0
-    is_new_ep = np.empty(n_warn_days, dtype=bool)
-    is_new_ep[0] = True
-    is_new_ep[1:] = (gi_sub[1:] != gi_sub[:-1]) | ((di_rel[1:] - di_rel[:-1]) > (max_gap + 1))
-
-    ep_ids = np.cumsum(is_new_ep) - 1
-    n_ep = int(ep_ids[-1]) + 1
-    day_hit = fcover[gi, di]
-    ep_tp = np.zeros(n_ep, dtype=bool)
-    np.logical_or.at(ep_tp, ep_ids, day_hit)
-
-    tp_ep = int(ep_tp.sum())
+    n_ep, tp_ep = _collapse_and_score_episodes(flat, g_idx, w0, win_len, fcover, max_gap=max_gap)
     fp_ep = n_ep - tp_ep
 
     if (tp_ev == 0) != (tp_ep == 0):
@@ -1292,7 +1418,8 @@ def run_full_scoring(
     for cat_name, cat_df in catalogs:
         c_sl = prepare_catalog_slice(cat_df, gid_to_idx, eval_150, "2021-01-01", "2025-12-31", 7)
         fcov = build_fcover(n_g, c_sl)
-        ev_g, ev_s, ev_w0 = c_sl["ev_g"], c_sl["ev_s"], c_sl["ev_w0"]
+        fcov_pre = build_pre_onset_fcover(n_g, c_sl)
+        fcov_before = build_strictly_before_fcover(n_g, c_sl)
         for sk, targ, vname in (
             ("CAP_Perm", 1, "CAP_Perm_All"),
             ("DHM_0d", 2, "DHM_0d_RP2"),
@@ -1302,48 +1429,10 @@ def run_full_scoring(
             ("GloFAS_v5_0d", 2, "GloFAS_v5_RP2"),
         ):
             w_i = make_w_matrix(data, sk, targ, 7, n_g)
-            r_prim = score_boolean_matrix(w_i, c_sl, fcov, g_mask_150, max_gap=2)
-            w_masked = w_i & g_mask_150[:, None]
-            prefix = np.zeros((n_g, D_TOTAL + 1), dtype=np.int32)
-            np.cumsum(w_masked, axis=1, out=prefix[:, 1:])
-            tp_before = int(((prefix[ev_g, ev_s] - prefix[ev_g, np.minimum(ev_w0, ev_s)]) > 0).sum())
-            audit_rows.append(
-                {
-                    "audit_type": "Event_Window_Rule",
-                    "catalog": cat_name,
-                    "lead_N": 7,
-                    "variant": f"{vname}__Primary_[start-7d,end]",
-                    **{k: r_prim[k] for k in metric_keys},
-                }
+            r_prim, ew_rows = score_event_window_rules(
+                w_i, c_sl, fcov, fcov_pre, fcov_before, g_mask_150, cat_name, vname, lead_n=7, max_gap=2
             )
-            audit_rows.append(
-                {
-                    "audit_type": "Event_Window_Rule",
-                    "catalog": cat_name,
-                    "lead_N": 7,
-                    "variant": f"{vname}__PreOnset_[start-7d,start]",
-                    "n_events": r_prim["n_events"],
-                    "tp_ev": r_prim["tp_pre"],
-                    "recall_pct": r_prim["pre_recall_pct"],
-                    "n_episodes": r_prim["n_episodes"],
-                    "tp_ep": r_prim["tp_ep"],
-                    "precision_pct": r_prim["precision_pct"],
-                }
-            )
-            audit_rows.append(
-                {
-                    "audit_type": "Event_Window_Rule",
-                    "catalog": cat_name,
-                    "lead_N": 7,
-                    "variant": f"{vname}__StrictlyBefore_[start-7d,start-1d]",
-                    "n_events": r_prim["n_events"],
-                    "tp_ev": tp_before,
-                    "recall_pct": round(100.0 * tp_before / max(1, r_prim["n_events"]), 3),
-                    "n_episodes": r_prim["n_episodes"],
-                    "tp_ep": r_prim["tp_ep"],
-                    "precision_pct": r_prim["precision_pct"],
-                }
-            )
+            audit_rows.extend(ew_rows)
             if sk == "DHM_Oper":
                 w_iss = make_issue_indexed_w_matrix(data, sk, targ, 7, n_g)
                 r_iss = score_boolean_matrix(w_iss, c_sl, fcov, g_mask_150, max_gap=2)

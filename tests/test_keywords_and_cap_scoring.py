@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import numpy as np
+import pandas as pd
 import pytest
 
+from cap_alerting_coverage.config import D_TOTAL, date_to_idx
 from cap_alerting_coverage.keywords import (
     classify_cap_alert,
     classify_multi_hazard,
@@ -11,6 +14,13 @@ from cap_alerting_coverage.keywords import (
     map_certainty,
     map_severity,
     map_urgency,
+)
+from cap_alerting_coverage.scoring import (
+    build_fcover,
+    build_pre_onset_fcover,
+    build_strictly_before_fcover,
+    prepare_catalog_slice,
+    score_event_window_rules,
 )
 
 
@@ -87,3 +97,86 @@ def test_multi_hazard_classifier():
     assert hz["wildfire"] is True
     assert hz["heat"] is True
     assert hz["earthquake"] is False
+
+
+def test_event_window_rule_episode_precision_pre_onset_and_strictly_before():
+    """PreOnset and StrictlyBefore score episode precision against narrowed onset masks."""
+    gid_to_idx = {"TST.1_1": 0, "TST.2_1": 1}
+    n_g = len(gid_to_idx)
+    g_mask = np.ones(n_g, dtype=bool)
+
+    cat_df = pd.DataFrame(
+        [
+            {
+                "event_id": "E_AFTER",
+                "gid_1": "TST.1_1",
+                "country_iso3": "TST",
+                "start_date": "2022-03-10",
+                "end_date": "2022-03-14",
+                "has_idmc": True,
+                "has_montandon": False,
+                "has_groundsource": False,
+                "waterfall_pop": 100.0,
+            },
+            {
+                "event_id": "E_ONSET",
+                "gid_1": "TST.2_1",
+                "country_iso3": "TST",
+                "start_date": "2022-06-10",
+                "end_date": "2022-06-14",
+                "has_idmc": True,
+                "has_montandon": False,
+                "has_groundsource": False,
+                "waterfall_pop": 100.0,
+            },
+        ]
+    )
+    c_sl = prepare_catalog_slice(cat_df, gid_to_idx, {"TST"}, "2021-01-01", "2025-12-31", lead_n=7)
+    fcov = build_fcover(n_g, c_sl)
+    fcov_pre = build_pre_onset_fcover(n_g, c_sl)
+    fcov_before = build_strictly_before_fcover(n_g, c_sl)
+
+    # Alerts occur ONLY during/after onset (start+2d for E_AFTER, exact start day for E_ONSET) + 1 FP episode.
+    w_during_after = np.zeros((n_g, D_TOTAL), dtype=bool)
+    w_during_after[0, date_to_idx("2022-03-12")] = True  # after onset only -> Primary TP only
+    w_during_after[1, date_to_idx("2022-06-10")] = True  # exact onset day -> Primary + PreOnset TP
+    w_during_after[0, date_to_idx("2023-01-15")] = True  # false alarm outside any event
+
+    _, rows = score_event_window_rules(
+        w_during_after,
+        c_sl,
+        fcov,
+        fcov_pre,
+        fcov_before,
+        g_mask,
+        cat_name="Without_GS",
+        variant_name="CAP_Perm_All",
+        lead_n=7,
+        max_gap=2,
+    )
+    by_var = {r["variant"]: r for r in rows}
+    prim = by_var["CAP_Perm_All__Primary_[start-7d,end]"]
+    pre = by_var["CAP_Perm_All__PreOnset_[start-7d,start]"]
+    before = by_var["CAP_Perm_All__StrictlyBefore_[start-7d,start-1d]"]
+
+    assert prim["n_events"] == pre["n_events"] == before["n_events"] == 2
+    assert prim["n_episodes"] == pre["n_episodes"] == before["n_episodes"] == 3
+    assert (prim["tp_ev"], pre["tp_ev"], before["tp_ev"]) == (2, 1, 0)
+    assert (prim["tp_ep"], pre["tp_ep"], before["tp_ep"]) == (2, 1, 0)
+    assert prim["precision_pct"] > pre["precision_pct"] > before["precision_pct"]
+    assert prim["precision_pct"] == pytest.approx(66.667, abs=1e-3)
+    assert pre["precision_pct"] == pytest.approx(33.333, abs=1e-3)
+    assert before["precision_pct"] == pytest.approx(0.0, abs=1e-6)
+
+    # Boundary check: events with ev_s == 0 or ev_s <= ev_w0 are skipped in StrictlyBefore mask.
+    edge_slice = {
+        "ev_g": np.array([0, 1], dtype=np.int32),
+        "ev_s": np.array([0, 10], dtype=np.int32),
+        "ev_w0": np.array([0, 10], dtype=np.int32),
+        "ev_w1": np.array([2, 12], dtype=np.int32),
+    }
+    edge_pre = build_pre_onset_fcover(2, edge_slice)
+    edge_before = build_strictly_before_fcover(2, edge_slice)
+    assert edge_pre[0, 0] and edge_pre[1, 10]
+    assert int(edge_pre.sum()) == 2
+    assert not np.any(edge_before)

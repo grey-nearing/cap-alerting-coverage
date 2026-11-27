@@ -32,7 +32,10 @@ from cap_alerting_coverage.scoring import (
     load_universe_sets,
     make_w_matrix,
 )
-from cap_alerting_coverage.stats_utils import mcnemar_exact_p
+from cap_alerting_coverage.stats_utils import (
+    country_clustered_coverage_inference,
+    mcnemar_exact_p,
+)
 from cap_alerting_coverage.validation_audit import run_validation_audit
 
 # Public backward-compatible alias
@@ -81,6 +84,67 @@ def _clean_auth_name(iso: str, raw_auth: str) -> str:
 
 def _clean_pipe_list(raw_val: str) -> str:
     return re.sub(r"\s*\|\s*", "; ", str(raw_val)).strip()
+
+
+def build_country_clustered_inference_table(
+    data: dict[str, Any],
+    gid_to_idx: dict[str, int],
+    eval_150: set[str],
+    n_g: int,
+    n_resamples: int = 2000,
+    seed: int = 42,
+) -> pd.DataFrame:
+    """Compute country-level paired Wilcoxon tests, DEFF, and clustered 95% CIs for 2021–2025 systems."""
+    w_cap = make_w_matrix(data, "CAP_Perm", 1, 7, n_g)
+    w_dhm_oper = make_w_matrix(data, "DHM_Oper", 2, 7, n_g)
+    w_dhm_0d = make_w_matrix(data, "DHM_0d", 2, 7, n_g)
+    w_ffm = make_w_matrix(data, "FFM", 0.50, 7, n_g)
+    w_glofas = make_w_matrix(data, "GloFAS_v5_0d", 2, 7, n_g)
+    w_geoglows = make_w_matrix(data, "GeoGLOWS_Retro_0d", 2, 7, n_g)
+
+    candidates: list[tuple[str, str, np.ndarray]] = [
+        ("CAP_Perm_U_GloFAS_v5_0d", "RP=2", w_cap | w_glofas),
+        ("CAP_Perm_U_GeoGLOWS_Retro_0d", "RP=2", w_cap | w_geoglows),
+        ("CAP_Perm_U_DHM_0d", "RP=2", w_cap | w_dhm_0d),
+        ("CAP_Perm_U_DHM_Oper", "RP=2", w_cap | w_dhm_oper),
+        ("CAP_Perm_U_FFM", "tau=0.50", w_cap | w_ffm),
+        ("CAP_Perm_U_DHM_Oper_U_FFM050", "RP=2", w_cap | w_dhm_oper | w_ffm),
+    ]
+
+    rows: list[dict[str, Any]] = []
+    for cat_k, cat_df in (("Without_GS", data["cat_without_gs"]), ("With_GS", data["cat_with_gs"])):
+        v_mask, det_cap = build_event_detection_flags(cat_df, w_cap, gid_to_idx, "2021-01-01", "2025-12-31", 7)
+        ev = cat_df[v_mask].copy()
+        in_eval = ev["country_iso3"].isin(eval_150).to_numpy()
+        if not np.any(in_eval):
+            continue
+        countries = ev.loc[in_eval, "country_iso3"].to_numpy()
+        pop_w = ev.loc[in_eval, "waterfall_pop"].to_numpy(dtype=np.float64)
+        base_det = det_cap[in_eval]
+
+        for sys_name, thr_lbl, w_cand in candidates:
+            _, det_cand = build_event_detection_flags(cat_df, w_cand, gid_to_idx, "2021-01-01", "2025-12-31", 7)
+            inf = country_clustered_coverage_inference(
+                country_ids=countries,
+                baseline=base_det,
+                candidate=det_cand[in_eval],
+                weights=pop_w,
+                n_resamples=n_resamples,
+                seed=seed,
+            )
+            rows.append(
+                {
+                    "catalog": cat_k,
+                    "benchmark": "2021_2025",
+                    "system": sys_name,
+                    "thr_label": thr_lbl,
+                    **{
+                        k: (round(v, 4) if isinstance(v, float) and np.isfinite(v) and k != "wilcoxon_p" else v)
+                        for k, v in inf.items()
+                    },
+                }
+            )
+    return pd.DataFrame(rows)
 
 
 def build_table1_summary(df_pr: pd.DataFrame) -> pd.DataFrame:
@@ -516,7 +580,15 @@ def generate_manuscript_tables_and_figures(
     ed6a_df = pd.DataFrame(ed6a_rows)
     ed6a_df.to_csv(paths.results_dir / "ed_table6a_annual_onboarding.csv", index=False)
 
-    summary_payload = {
+    clustered_df = build_country_clustered_inference_table(
+        data=data,
+        gid_to_idx=gid_to_idx,
+        eval_150=eval_150,
+        n_g=n_g,
+    )
+    clustered_df.to_csv(paths.results_dir / "country_clustered_inference.csv", index=False)
+
+    summary_payload: dict[str, Any] = {
         "n_eval_jurisdictions": len(eval_150),
         "n_cohort_d": len(cohort_d),
         "cat_a_eval_events": int(len(ev_a150)),
@@ -524,6 +596,23 @@ def generate_manuscript_tables_and_figures(
         "cat_a_eval_pop": float(ev_a150["waterfall_pop"].sum()),
         "cat_b_eval_pop": float(ev_b150["waterfall_pop"].sum()),
     }
+    if not clustered_df.empty:
+        hyb_rows = clustered_df[clustered_df["system"] == "CAP_Perm_U_DHM_Oper_U_FFM050"]
+        if not hyb_rows.empty:
+            summary_payload["country_clustered_hybrid"] = {
+                str(r["catalog"]): {
+                    "n_countries": int(r["n_countries"]),
+                    "n_improved": int(r["n_improved"]),
+                    "median_pp_gain": float(r["median_pp_gain"]),
+                    "wilcoxon_p": float(r["wilcoxon_p"]),
+                    "baseline_deff": float(r["baseline_deff"]),
+                    "candidate_deff": float(r["candidate_deff"]),
+                    "baseline_ci_pct": [float(r["baseline_ci_low_pct"]), float(r["baseline_ci_high_pct"])],
+                    "candidate_ci_pct": [float(r["candidate_ci_low_pct"]), float(r["candidate_ci_high_pct"])],
+                    "gap_closed_ci_pct": [float(r["gap_closed_ci_low_pct"]), float(r["gap_closed_ci_high_pct"])],
+                }
+                for _, r in hyb_rows.iterrows()
+            }
     (paths.results_dir / "reproduction_summary.json").write_text(
         json.dumps(summary_payload, indent=2) + "\n", encoding="utf-8"
     )
@@ -565,6 +654,7 @@ def generate_manuscript_tables_and_figures(
         "ed_table6a": ed6a_df,
         "ed_table6b": ed6b_df,
         "country_summary": c_df,
+        "country_clustered_inference": clustered_df,
         "figures": figures_written,
     }
 

@@ -1812,7 +1812,7 @@ def render_ed_fig1(
             "center",
         ),
         (
-            f"Subnational exclusion filter\n({ex_p:.1f}% [{ex_lo:.1f}–{ex_hi:.1f}%] prec.; {ex_r:.1f}% recall)",
+            f"Exclusion-only baseline\n({ex_p:.1f}% [{ex_lo:.1f}–{ex_hi:.1f}%] prec.; {ex_r:.1f}% recall)",
             ex_r,
             ex_p,
             [[max(0.0, ex_r - ex_r_lo)], [max(0.0, ex_r_hi - ex_r)]],
@@ -1824,14 +1824,14 @@ def render_ed_fig1(
             "center",
         ),
         (
-            f"Subnational inclusion filter\n({in_p:.1f}% [{in_lo:.1f}–{in_hi:.1f}%] prec.; {in_r:.1f}% recall)",
+            f"Broad flood-and-storm filter\n({in_p:.1f}% [{in_lo:.1f}–{in_hi:.1f}%] prec.; {in_r:.1f}% recall)",
             in_r,
             in_p,
             [[max(0.0, in_r - in_r_lo)], [max(0.0, in_r_hi - in_r)]],
             [[max(0.0, in_p - in_lo)], [max(0.0, in_hi - in_p)]],
             "s",
             PALETTE["cat1"],
-            (min(94.4, in_r - 2.6), max(72.0, in_p - 7.5)),
+            (min(99.8, max(98.5, in_r + 4.0)), max(75.0, in_p - 9.0)),
             "right",
             "top",
         ),
@@ -1867,7 +1867,7 @@ def render_ed_fig1(
 
     ax1.set_xlim(x_lo, 101.8)
     ax1.set_ylim(0, 104)
-    ax1.set_xlabel("Conditional recall within retained pool (%)", fontsize=7.0)
+    ax1.set_xlabel("Conditional recall within flood-relevant pool (%)", fontsize=7.0)
     ax1.set_ylabel("Classification / pairing precision (%)", fontsize=7.0)
     ax1.set_title(f"CAP keyword & location audit (n = {n_main} sample)", fontsize=7.3, fontweight="bold", pad=5)
     ax1.grid(True, alpha=0.45)

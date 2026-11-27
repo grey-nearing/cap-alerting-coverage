@@ -133,6 +133,35 @@ def test_synthetic_tier1_pipeline_and_cli(tmp_path: Path, monkeypatch: pytest.Mo
     geo_oper_thrs = set(pr_df[pr_df["system"].str.contains("GeoGLOWS_Oper", na=False)]["thr_label"])
     assert geo_oper_thrs == {"RP=2", "RP=5", "RP=10", "RP=25", "RP=50", "RP=100"}
 
+    # Event_Window_Rule episode precisions must be non-increasing from Primary -> PreOnset -> StrictlyBefore
+    aud_df = pd.read_csv(results_dir / "sensitivity_audits.csv")
+    ew_df = aud_df[aud_df["audit_type"] == "Event_Window_Rule"]
+    for cat_name in ("Without_GS", "With_GS"):
+        sub_cat = ew_df[ew_df["catalog"] == cat_name]
+        for sys_prefix in ("CAP_Perm_All", "DHM_Oper_RP2"):
+            r_p = sub_cat[sub_cat["variant"] == f"{sys_prefix}__Primary_[start-7d,end]"].iloc[0]
+            r_o = sub_cat[sub_cat["variant"] == f"{sys_prefix}__PreOnset_[start-7d,start]"].iloc[0]
+            r_b = sub_cat[sub_cat["variant"] == f"{sys_prefix}__StrictlyBefore_[start-7d,start-1d]"].iloc[0]
+            assert r_p["n_events"] == r_o["n_events"] == r_b["n_events"]
+            assert r_p["n_episodes"] == r_o["n_episodes"] == r_b["n_episodes"]
+            assert r_p["tp_ep"] >= r_o["tp_ep"] >= r_b["tp_ep"]
+            if r_p["n_episodes"] > 0:
+                assert r_p["precision_pct"] >= r_o["precision_pct"] >= r_b["precision_pct"]
+
+    # Verify country-level Wilcoxon & country-clustered bootstrap inference table
+    cl_path = results_dir / "country_clustered_inference.csv"
+    assert cl_path.exists(), "Missing country_clustered_inference.csv"
+    cl_df = pd.read_csv(cl_path)
+    assert not cl_df.empty
+    assert set(cl_df["catalog"]) == {"Without_GS", "With_GS"}
+    hyb_cl = cl_df[cl_df["system"] == "CAP_Perm_U_DHM_Oper_U_FFM050"]
+    assert len(hyb_cl) == 2
+    for _, r in hyb_cl.iterrows():
+        assert r["n_countries"] >= 1
+        assert 0.0 <= r["baseline_ci_low_pct"] <= r["baseline_pct"] <= r["baseline_ci_high_pct"] <= 100.0
+        assert 0.0 <= r["candidate_ci_low_pct"] <= r["candidate_pct"] <= r["candidate_ci_high_pct"] <= 100.0
+        assert 0.0 <= r["wilcoxon_p"] <= 1.0
+
     # Test CLI roundtrip: reproduce-tier1 -> verify-parity -> build-figures -> audit-validation
     results_dir_2 = tmp_path / "out_results_cli"
     figures_dir_2 = tmp_path / "out_figures_cli"
