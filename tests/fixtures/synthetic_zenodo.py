@@ -498,6 +498,41 @@ def build_synthetic_zenodo_archive(root_dir: Path) -> Path:
     pd.DataFrame(
         [
             {
+                "rp_yr": rp,
+                "gauge_n": 100,
+                "gauge_precision_mean_pct": 50.0,
+                "gauge_precision_q25_pct": 30.0,
+                "gauge_precision_median_pct": 52.0,
+                "gauge_precision_q75_pct": 68.0,
+            }
+            for rp in (2, 5, 10, 20, 25, 50, 100)
+        ]
+    ).to_csv(res_dir / "stream_gauge_precision_iqr.csv", index=False)
+
+    ecdf_rows = []
+    for key, lbl, n_g_s, med, pos, shift in (
+        ("dhm_shared_9756", "Google DHM (shared; n = 70)", 70, 0.76, 93.2, 0.65),
+        ("dhm_all_18047", "Google DHM (all gauges; n = 95)", 95, 0.73, 90.5, 0.60),
+        ("glofas_v5_shared_9756", "Copernicus GloFAS v5 (n = 70)", 70, 0.34, 74.3, 0.25),
+        ("geoglows_v2_shared_9756", "GeoGLOWS v2 (n = 70)", 70, 0.09, 59.0, 0.05),
+    ):
+        for p_i in np.linspace(0.05, 1.0, 20):
+            ecdf_rows.append(
+                {
+                    "series_key": key,
+                    "series_label": lbl,
+                    "n_gauges": n_g_s,
+                    "median_nse": med,
+                    "pct_positive_nse": pos,
+                    "nse_value": round(float(max(-1.0, min(1.0, shift + (p_i - 0.5) * 0.9))), 4),
+                    "ecdf_prob": round(float(p_i), 4),
+                }
+            )
+    pd.DataFrame(ecdf_rows).to_csv(res_dir / "stream_gauge_nse_ecdf_quantiles.csv", index=False)
+
+    pd.DataFrame(
+        [
+            {
                 "unfiltered_total_gauges": 100,
                 "unfiltered_valid_nse": 95,
                 "unfiltered_median_nse": 0.73,

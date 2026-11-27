@@ -1,262 +1,722 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 42 1200 614" width="1200" height="614">
-  <defs>
-    <style type="text/css">
-      .node-text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 11px; font-weight: 600; fill: #1e293b; text-anchor: middle; }
-      .node-text-bold { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: bold; fill: #0f172a; text-anchor: middle; }
-      .polarity-pos { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: bold; fill: #0284c7; }
-      .polarity-neg { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 14px; font-weight: bold; fill: #e11d48; }
-      .legend-title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 10.5px; font-weight: bold; fill: #0f172a; }
-      .legend-text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 9.5px; fill: #334155; }
-      .scope-tag { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 10.5px; font-weight: bold; fill: #e11d48; }
-    </style>
-
-    <!-- Arrow Markers -->
-    <marker id="arrow-blue" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
-      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#38bdf8"/>
-    </marker>
-    <marker id="arrow-red" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#f43f5e"/>
-    </marker>
-    <marker id="arrow-gray" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
-      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#cbd5e1"/>
-    </marker>
-
-    <!-- Card Shadow -->
-    <filter id="card-shadow" x="-6%" y="-6%" width="112%" height="116%" filterUnits="userSpaceOnUse">
-      <feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#0f172a" flood-opacity="0.05"/>
-    </filter>
-  </defs>
-
-  <!-- Background -->
-  <rect x="0" y="42" width="1200" height="614" fill="#ffffff"/>
-
-  <!-- ========================================================================= -->
-  <!-- RED DASHED SCOPE BOUNDARY (FORECAST-TO-ALERT GENERATION SUBSYSTEM)        -->
-  <!-- Encloses Flood forecast, Accuracy, Severity, 3 Authorities nodes, and     -->
-  <!-- Flood alert; excludes dissemination reach, alert receipt, and downstream. -->
-  <!-- ========================================================================= -->
-  <g>
-    <path d="M 130,99 L 284,99 Q 304,99 304,119 L 304,328 Q 304,352 326,352 L 434,352 Q 454,352 454,372 L 454,432 Q 454,452 434,452 L 386,452 Q 372,452 368,470 L 346,574 Q 342,592 322,592 L 40,592 Q 20,592 20,572 L 20,222 Q 20,202 40,202 L 90,202 Q 110,202 110,182 L 110,119 Q 110,99 130,99 Z"
-          fill="#fff1f2" fill-opacity="0.48" stroke="#f43f5e" stroke-width="2.2" stroke-dasharray="7,4"/>
-    <g transform="translate(139, 88)">
-      <rect x="0" y="0" width="136" height="22" rx="4" fill="#ffffff" stroke="#fecdd3" stroke-width="1.2" filter="url(#card-shadow)"/>
-      <circle cx="11" cy="11" r="4" fill="#e11d48"/>
-      <text x="21" y="14.5" class="scope-tag">Scope of this study</text>
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="408.96pt" height="231.732pt" viewBox="0 0 408.96 231.732" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-11-27T11:36:49.341676</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.1, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 231.732 
+L 408.96 231.732 
+L 408.96 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 8.009561 210.16944 
+L 161.609268 210.16944 
+L 161.609268 19.31724 
+L 8.009561 19.31724 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #faf7f2"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 167.243707 210.16944 
+L 228.48761 210.16944 
+L 228.48761 19.31724 
+L 167.243707 19.31724 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #f8fafc"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 234.122049 210.16944 
+L 351.955317 210.16944 
+L 351.955317 19.31724 
+L 234.122049 19.31724 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #fdfcf9"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 357.589756 210.16944 
+L 400.950439 210.16944 
+L 400.950439 19.31724 
+L 357.589756 19.31724 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #faf7f7"/>
+   </g>
+   <g id="line2d_1">
+    <path d="M 8.009561 19.31724 
+L 161.609268 19.31724 
+" clip-path="url(#p1ec0f7075e)" style="fill: none; stroke: #cbd5e1; stroke-width: 0.75; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_2">
+    <path d="M 167.243707 19.31724 
+L 228.48761 19.31724 
+" clip-path="url(#p1ec0f7075e)" style="fill: none; stroke: #cbd5e1; stroke-width: 0.75; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_3">
+    <path d="M 234.122049 19.31724 
+L 351.955317 19.31724 
+" clip-path="url(#p1ec0f7075e)" style="fill: none; stroke: #cbd5e1; stroke-width: 0.75; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_4">
+    <path d="M 357.589756 19.31724 
+L 400.950439 19.31724 
+" clip-path="url(#p1ec0f7075e)" style="fill: none; stroke: #cbd5e1; stroke-width: 0.75; stroke-linecap: square"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 11.721396 220.14864 
+Q 18.296448 220.14864 23.893415 220.14864 
+" clip-path="url(#p1ec0f7075e)" style="fill: none; stroke: #475569; stroke-width: 0.95; stroke-linecap: round"/>
+    <path d="M 20.293415 218.14864 
+L 23.893415 220.14864 
+L 20.293415 222.14864 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #475569; stroke: #475569; stroke-width: 0.95; stroke-linecap: round"/>
+   </g>
+   <g id="patch_7">
+    <path d="M 117.060908 220.14864 
+Q 123.63596 220.14864 129.027014 220.14864 
+" clip-path="url(#p1ec0f7075e)" style="fill: none; stroke: #942e2e; stroke-width: 1.15; stroke-linecap: round"/>
+    <path d="M 125.427014 218.14864 
+L 129.027014 220.14864 
+L 125.427014 222.14864 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #942e2e; stroke: #942e2e; stroke-width: 1.15; stroke-linecap: round"/>
+   </g>
+   <g id="patch_8">
+    <path d="M 11.43922 206.17776 
+L 158.17961 206.17776 
+Q 160.139415 206.17776 160.139415 204.18192 
+L 160.139415 28.04904 
+Q 160.139415 26.0532 158.17961 26.0532 
+L 11.43922 26.0532 
+Q 9.479415 26.0532 9.479415 28.04904 
+L 9.479415 204.18192 
+Q 9.479415 206.17776 11.43922 206.17776 
+L 11.43922 206.17776 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: none; stroke-dasharray: 3.6,2.16; stroke-dashoffset: 0; stroke: #9e3a2b; stroke-width: 0.9; stroke-linejoin: miter"/>
+   </g>
+   <g id="text_1">
+    <text style="font-weight: 700; font-size: 6px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #475569" x="84.809415" y="13.813385" transform="rotate(-0 84.809415 13.813385)">1   FORECAST &amp; ALERT ISSUANCE</text>
+   </g>
+   <g id="text_2">
+    <text style="font-weight: 700; font-size: 6px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #475569" x="197.865659" y="13.813385" transform="rotate(-0 197.865659 13.813385)">2   DISSEMINATION</text>
+   </g>
+   <g id="text_3">
+    <text style="font-weight: 700; font-size: 6px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #475569" x="293.038683" y="13.813385" transform="rotate(-0 293.038683 13.813385)">3   PROTECTIVE ACTION DECISION</text>
+   </g>
+   <g id="text_4">
+    <text style="font-weight: 700; font-size: 6px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #475569" x="379.270098" y="13.813385" transform="rotate(-0 379.270098 13.813385)">4   OUTCOME</text>
+   </g>
+   <g id="patch_9">
+    <path d="M 80.767317 67.96584 
+C 86.891707 84.681 91.79122 102.1446 92.482444 116.457919 
+" clip-path="url(#p1ec0f7075e)" style="fill: none; stroke: #475569; stroke-width: 0.88; stroke-linecap: round"/>
+    <path d="M 94.306465 112.765637 
+L 92.482444 116.457919 
+L 90.311122 112.958582 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #475569; stroke: #475569; stroke-width: 0.88; stroke-linecap: round"/>
+   </g>
+   <g id="patch_10">
+    <path d="M 49.165463 102.89304 
+C 56.269756 107.88264 69.253463 110.37744 74.089485 116.645548 
+" clip-path="url(#p1ec0f7075e)" style="fill: none; stroke: #475569; stroke-width: 0.88; stroke-linecap: round"/>
+    <path d="M 73.473903 112.573563 
+L 74.089485 116.645548 
+L 70.306926 115.016974 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #475569; stroke: #475569; stroke-width: 0.88; stroke-linecap: round"/>
+   </g>
+   <g id="patch_11">
+    <path d="M 48.737833 127.84104 
+Q 51.537279 127.84104 53.385696 127.84104 
+" clip-path="url(#p1ec0f7075e)" style="fill: none; stroke: #475569; stroke-width: 0.92; stroke-linecap: round"/>
+    <path d="M 49.585696 125.74104 
+L 53.385696 127.84104 
+L 49.585696 129.94104 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #475569; stroke: #475569; stroke-width: 0.92; stroke-linecap: round"/>
+   </g>
+   <g id="patch_12">
+    <path d="M 120.698341 127.84104 
+C 123.148098 127.84104 123.148098 134.82648 127.632515 135.034065 
+" clip-path="url(#p1ec0f7075e)" style="fill: none; stroke: #475569; stroke-width: 0.88; stroke-linecap: round"/>
+    <path d="M 124.128847 132.869738 
+L 127.632515 135.034065 
+L 123.943884 136.865459 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #475569; stroke: #475569; stroke-width: 0.88; stroke-linecap: round"/>
+   </g>
+   <g id="patch_13">
+    <path d="M 120.698341 159.525 
+C 124.128 159.525 124.128 145.8036 127.695201 144.390848 
+" clip-path="url(#p1ec0f7075e)" style="fill: none; stroke: #475569; stroke-width: 0.88; stroke-linecap: round"/>
+    <path d="M 123.611705 143.856936 
+L 127.695201 144.390848 
+L 125.084562 147.5759 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #475569; stroke: #475569; stroke-width: 0.88; stroke-linecap: round"/>
+   </g>
+   <g id="patch_14">
+    <path d="M 120.698341 190.71 
+C 137.111707 190.71 142.01122 171.999 142.715834 150.950268 
+" clip-path="url(#p1ec0f7075e)" style="fill: none; stroke: #475569; stroke-width: 0.88; stroke-linecap: round"/>
+    <path d="M 140.59651 154.48134 
+L 142.715834 150.950268 
+L 144.59427 154.615166 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #475569; stroke: #475569; stroke-width: 0.88; stroke-linecap: round"/>
+   </g>
+   <g id="patch_15">
+    <path d="M 157.755926 139.5666 
+Q 165.086373 139.5666 171.259043 139.5666 
+" clip-path="url(#p1ec0f7075e)" style="fill: none; stroke: #1b4965; stroke-width: 1.12; stroke-linecap: round"/>
+    <path d="M 167.459043 137.4666 
+L 171.259043 139.5666 
+L 167.459043 141.6666 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #1b4965; stroke: #1b4965; stroke-width: 1.12; stroke-linecap: round"/>
+   </g>
+   <g id="patch_16">
+    <path d="M 197.865659 99.200267 
+Q 197.865659 113.544182 197.865659 126.937067 
+" clip-path="url(#p1ec0f7075e)" style="fill: none; stroke: #475569; stroke-width: 0.92; stroke-linecap: round"/>
+    <path d="M 199.965659 123.137067 
+L 197.865659 126.937067 
+L 195.765659 123.137067 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #475569; stroke: #475569; stroke-width: 0.92; stroke-linecap: round"/>
+   </g>
+   <g id="patch_17">
+    <path d="M 222.118244 134.07804 
+C 230.937366 117.86184 230.937366 79.6914 239.095448 79.6914 
+" clip-path="url(#p1ec0f7075e)" style="fill: none; stroke: #475569; stroke-width: 0.88; stroke-linecap: round"/>
+    <path d="M 235.495448 77.6914 
+L 239.095448 79.6914 
+L 235.495448 81.6914 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #475569; stroke: #475569; stroke-width: 0.88; stroke-linecap: round"/>
+   </g>
+   <g id="patch_18">
+    <path d="M 222.917226 139.5666 
+Q 230.860812 139.5666 237.718984 139.5666 
+" clip-path="url(#p1ec0f7075e)" style="fill: none; stroke: #1b4965; stroke-width: 1.05; stroke-linecap: round"/>
+    <path d="M 233.918984 137.4666 
+L 237.718984 139.5666 
+L 233.918984 141.6666 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #1b4965; stroke: #1b4965; stroke-width: 1.05; stroke-linecap: round"/>
+   </g>
+   <g id="patch_19">
+    <path d="M 222.853171 173.74536 
+C 231.427317 173.74536 231.427317 147.051 239.131525 144.809324 
+" clip-path="url(#p1ec0f7075e)" style="fill: none; stroke: #475569; stroke-width: 0.88; stroke-linecap: round"/>
+    <path d="M 235.116114 143.894737 
+L 239.131525 144.809324 
+L 236.23364 147.735458 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #475569; stroke: #475569; stroke-width: 0.88; stroke-linecap: round"/>
+   </g>
+   <g id="patch_20">
+    <path d="M 222.853171 199.19232 
+C 230.937366 199.19232 231.917268 191.20896 239.095448 191.20896 
+" clip-path="url(#p1ec0f7075e)" style="fill: none; stroke: #475569; stroke-width: 0.88; stroke-linecap: round"/>
+    <path d="M 235.495448 189.20896 
+L 239.095448 191.20896 
+L 235.495448 193.20896 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #475569; stroke: #475569; stroke-width: 0.88; stroke-linecap: round"/>
+   </g>
+   <g id="patch_21">
+    <path d="M 300.265463 79.6914 
+C 322.068293 79.6914 329.417561 104.6394 329.417561 127.433985 
+" clip-path="url(#p1ec0f7075e)" style="fill: none; stroke: #475569; stroke-width: 0.88; stroke-linecap: round"/>
+    <path d="M 331.417561 123.833985 
+L 329.417561 127.433985 
+L 327.417561 123.833985 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #475569; stroke: #475569; stroke-width: 0.88; stroke-linecap: round"/>
+   </g>
+   <g id="patch_22">
+    <path d="M 301.070007 139.5666 
+Q 304.722221 139.5666 307.28902 139.5666 
+" clip-path="url(#p1ec0f7075e)" style="fill: none; stroke: #1b4965; stroke-width: 1.05; stroke-linecap: round"/>
+    <path d="M 303.48902 137.4666 
+L 307.28902 139.5666 
+L 303.48902 141.6666 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #1b4965; stroke: #1b4965; stroke-width: 1.05; stroke-linecap: round"/>
+   </g>
+   <g id="patch_23">
+    <path d="M 300.265463 191.20896 
+C 322.068293 191.20896 329.417561 171.999 329.417561 151.699215 
+" clip-path="url(#p1ec0f7075e)" style="fill: none; stroke: #475569; stroke-width: 0.88; stroke-linecap: round"/>
+    <path d="M 327.417561 155.299215 
+L 329.417561 151.699215 
+L 331.417561 155.299215 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #475569; stroke: #475569; stroke-width: 0.88; stroke-linecap: round"/>
+   </g>
+   <g id="patch_24">
+    <path d="M 350.059029 139.5666 
+Q 355.184564 139.5666 359.048951 139.5666 
+" clip-path="url(#p1ec0f7075e)" style="fill: none; stroke: #942e2e; stroke-width: 1.22; stroke-linecap: round"/>
+    <path d="M 355.248951 137.4666 
+L 359.048951 139.5666 
+L 355.248951 141.6666 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #942e2e; stroke: #942e2e; stroke-width: 1.22; stroke-linecap: round"/>
+   </g>
+   <g id="patch_25">
+    <path d="M 81.992195 48.00744 
+C 121.188293 26.0532 227.752683 26.0532 261.000633 68.499983 
+" clip-path="url(#p1ec0f7075e)" style="fill: none; stroke: #64748b; stroke-width: 0.88; stroke-linecap: round"/>
+    <path d="M 260.355226 64.432619 
+L 261.000633 68.499983 
+L 257.206241 66.899173 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #64748b; stroke: #64748b; stroke-width: 0.88; stroke-linecap: round"/>
+   </g>
+   <g id="patch_26">
+    <path d="M 383.802146 129.08844 
+C 394.336098 104.6394 394.336098 82.1862 379.618446 70.766568 
+" clip-path="url(#p1ec0f7075e)" style="fill: none; stroke: #64748b; stroke-width: 0.88; stroke-linecap: round"/>
+    <path d="M 381.236635 74.55358 
+L 379.618446 70.766568 
+L 383.688726 71.393319 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #64748b; stroke: #64748b; stroke-width: 0.88; stroke-linecap: round"/>
+   </g>
+   <g id="patch_27">
+    <path d="M 345.096 60.48144 
+C 325.742927 60.48144 301.245366 60.48144 280.283609 68.8764 
+" clip-path="url(#p1ec0f7075e)" style="fill: none; stroke: #64748b; stroke-width: 0.88; stroke-linecap: round"/>
+    <path d="M 284.369125 69.394624 
+L 280.283609 68.8764 
+L 282.881996 65.681344 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #64748b; stroke: #64748b; stroke-width: 0.88; stroke-linecap: round"/>
+   </g>
+   <g id="text_5">
+    <text style="font-size: 5.8px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #334155" x="29.567415" y="221.64956" transform="rotate(-0 29.567415 221.64956)">+  Reinforcing (same direction)</text>
+   </g>
+   <g id="text_6">
+    <text style="font-size: 5.8px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #7f1d1d" x="134.906927" y="221.64956" transform="rotate(-0 134.906927 221.64956)">−  Reducing (opposite direction)</text>
+   </g>
+   <g id="text_7">
+    <text style="font-style: italic; font-size: 5.6px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: end; fill: #64748b" x="400.460488" y="221.597804" transform="rotate(-0 400.460488 221.597804)">Adapted from Lindell &amp; Perry (2012)</text>
+   </g>
+   <g id="patch_28">
+    <path d="M 47.083171 67.96584 
+L 99.752927 67.96584 
+Q 100.977805 67.96584 100.977805 66.71844 
+L 100.977805 49.25484 
+Q 100.977805 48.00744 99.752927 48.00744 
+L 47.083171 48.00744 
+Q 45.858293 48.00744 45.858293 49.25484 
+L 45.858293 66.71844 
+Q 45.858293 67.96584 47.083171 67.96584 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #f8f9fb; stroke: #94a3b8; stroke-width: 0.65; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_29">
+    <path d="M 15.603805 102.89304 
+L 64.108976 102.89304 
+Q 65.333854 102.89304 65.333854 101.64564 
+L 65.333854 84.18204 
+Q 65.333854 82.93464 64.108976 82.93464 
+L 15.603805 82.93464 
+Q 14.378927 82.93464 14.378927 84.18204 
+L 14.378927 101.64564 
+Q 14.378927 102.89304 15.603805 102.89304 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #f8f9fb; stroke: #94a3b8; stroke-width: 0.65; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_30">
+    <path d="M 15.358829 136.82232 
+L 46.715707 136.82232 
+Q 47.940585 136.82232 47.940585 135.57492 
+L 47.940585 120.10716 
+Q 47.940585 118.85976 46.715707 118.85976 
+L 15.358829 118.85976 
+Q 14.133951 118.85976 14.133951 120.10716 
+L 14.133951 135.57492 
+Q 14.133951 136.82232 15.358829 136.82232 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #f8f9fb; stroke: #94a3b8; stroke-width: 0.65; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_31">
+    <path d="M 56.759707 138.3192 
+L 119.473463 138.3192 
+Q 120.698341 138.3192 120.698341 137.0718 
+L 120.698341 118.61028 
+Q 120.698341 117.36288 119.473463 117.36288 
+L 56.759707 117.36288 
+Q 55.534829 117.36288 55.534829 118.61028 
+L 55.534829 137.0718 
+Q 55.534829 138.3192 56.759707 138.3192 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #ffffff; stroke: #5a758a; stroke-width: 0.78; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_32">
+    <path d="M 56.759707 170.00316 
+L 119.473463 170.00316 
+Q 120.698341 170.00316 120.698341 168.75576 
+L 120.698341 150.29424 
+Q 120.698341 149.04684 119.473463 149.04684 
+L 56.759707 149.04684 
+Q 55.534829 149.04684 55.534829 150.29424 
+L 55.534829 168.75576 
+Q 55.534829 170.00316 56.759707 170.00316 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #ffffff; stroke: #5a758a; stroke-width: 0.78; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_33">
+    <path d="M 56.759707 201.18816 
+L 119.473463 201.18816 
+Q 120.698341 201.18816 120.698341 199.94076 
+L 120.698341 181.47924 
+Q 120.698341 180.23184 119.473463 180.23184 
+L 56.759707 180.23184 
+Q 55.534829 180.23184 55.534829 181.47924 
+L 55.534829 199.94076 
+Q 55.534829 201.18816 56.759707 201.18816 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #ffffff; stroke: #5a758a; stroke-width: 0.78; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_34">
+    <path d="M 129.762439 150.04476 
+L 155.729854 150.04476 
+Q 156.954732 150.04476 156.954732 148.79736 
+L 156.954732 130.33584 
+Q 156.954732 129.08844 155.729854 129.08844 
+L 129.762439 129.08844 
+Q 128.537561 129.08844 128.537561 130.33584 
+L 128.537561 148.79736 
+Q 128.537561 150.04476 129.762439 150.04476 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #eaf2f8; stroke: #1b4965; stroke-width: 1.15; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_35">
+    <path d="M 169.938439 98.4024 
+L 225.792878 98.4024 
+Q 227.017756 98.4024 227.017756 97.155 
+L 227.017756 78.69348 
+Q 227.017756 77.44608 225.792878 77.44608 
+L 169.938439 77.44608 
+Q 168.713561 77.44608 168.713561 78.69348 
+L 168.713561 97.155 
+Q 168.713561 98.4024 169.938439 98.4024 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #f8f9fb; stroke: #94a3b8; stroke-width: 0.65; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_36">
+    <path d="M 174.837951 150.04476 
+L 220.893366 150.04476 
+Q 222.118244 150.04476 222.118244 148.79736 
+L 222.118244 130.33584 
+Q 222.118244 129.08844 220.893366 129.08844 
+L 174.837951 129.08844 
+Q 173.613073 129.08844 173.613073 130.33584 
+L 173.613073 148.79736 
+Q 173.613073 150.04476 174.837951 150.04476 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #eaf2f8; stroke: #1b4965; stroke-width: 1.15; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_37">
+    <path d="M 174.103024 183.47508 
+L 221.628293 183.47508 
+Q 222.853171 183.47508 222.853171 182.22768 
+L 222.853171 165.26304 
+Q 222.853171 164.01564 221.628293 164.01564 
+L 174.103024 164.01564 
+Q 172.878146 164.01564 172.878146 165.26304 
+L 172.878146 182.22768 
+Q 172.878146 183.47508 174.103024 183.47508 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #f8f9fb; stroke: #94a3b8; stroke-width: 0.65; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_38">
+    <path d="M 174.103024 208.1736 
+L 221.628293 208.1736 
+Q 222.853171 208.1736 222.853171 206.9262 
+L 222.853171 191.45844 
+Q 222.853171 190.21104 221.628293 190.21104 
+L 174.103024 190.21104 
+Q 172.878146 190.21104 172.878146 191.45844 
+L 172.878146 206.9262 
+Q 172.878146 208.1736 174.103024 208.1736 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #f8f9fb; stroke: #94a3b8; stroke-width: 0.65; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_39">
+    <path d="M 241.226341 90.16956 
+L 299.040585 90.16956 
+Q 300.265463 90.16956 300.265463 88.92216 
+L 300.265463 70.46064 
+Q 300.265463 69.21324 299.040585 69.21324 
+L 241.226341 69.21324 
+Q 240.001463 69.21324 240.001463 70.46064 
+L 240.001463 88.92216 
+Q 240.001463 90.16956 241.226341 90.16956 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #fefcf7; stroke: #a38246; stroke-width: 0.82; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_40">
+    <path d="M 241.226341 150.04476 
+L 299.040585 150.04476 
+Q 300.265463 150.04476 300.265463 148.79736 
+L 300.265463 130.33584 
+Q 300.265463 129.08844 299.040585 129.08844 
+L 241.226341 129.08844 
+Q 240.001463 129.08844 240.001463 130.33584 
+L 240.001463 148.79736 
+Q 240.001463 150.04476 241.226341 150.04476 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #fefcf7; stroke: #a38246; stroke-width: 0.82; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_41">
+    <path d="M 241.226341 201.68712 
+L 299.040585 201.68712 
+Q 300.265463 201.68712 300.265463 200.43972 
+L 300.265463 181.9782 
+Q 300.265463 180.7308 299.040585 180.7308 
+L 241.226341 180.7308 
+Q 240.001463 180.7308 240.001463 181.9782 
+L 240.001463 200.43972 
+Q 240.001463 201.68712 241.226341 201.68712 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #fefcf7; stroke: #a38246; stroke-width: 0.82; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_42">
+    <path d="M 310.799415 150.7932 
+L 348.035707 150.7932 
+Q 349.260585 150.7932 349.260585 149.5458 
+L 349.260585 129.5874 
+Q 349.260585 128.34 348.035707 128.34 
+L 310.799415 128.34 
+Q 309.574537 128.34 309.574537 129.5874 
+L 309.574537 149.5458 
+Q 309.574537 150.7932 310.799415 150.7932 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #e7f3f0; stroke: #1b6b5a; stroke-width: 1.15; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_43">
+    <path d="M 362.734244 150.04476 
+L 396.050927 150.04476 
+Q 397.275805 150.04476 397.275805 148.79736 
+L 397.275805 130.33584 
+Q 397.275805 129.08844 396.050927 129.08844 
+L 362.734244 129.08844 
+Q 361.509366 129.08844 361.509366 130.33584 
+L 361.509366 148.79736 
+Q 361.509366 150.04476 362.734244 150.04476 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #faecec; stroke: #942e2e; stroke-width: 1.15; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_44">
+    <path d="M 346.320878 70.21116 
+L 390.906439 70.21116 
+Q 392.131317 70.21116 392.131317 68.96376 
+L 392.131317 51.99912 
+Q 392.131317 50.75172 390.906439 50.75172 
+L 346.320878 50.75172 
+Q 345.096 50.75172 345.096 51.99912 
+L 345.096 68.96376 
+Q 345.096 70.21116 346.320878 70.21116 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #f8f9fb; stroke: #94a3b8; stroke-width: 0.65; stroke-linejoin: miter"/>
+   </g>
+   <g id="text_8">
+    <text style="font-weight: 700; font-size: 6.2px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: start; fill: #962e22" x="14.868878" y="36.05553" transform="rotate(-0 14.868878 36.05553)">Scope of this study</text>
+   </g>
+   <g id="text_9">
+    <g id="patch_45">
+     <path d="M 168.835784 33.48664 
+L 226.895534 33.48664 
+L 226.895534 27.351577 
+L 168.835784 27.351577 
+z
+" style="fill: #f8fafc"/>
     </g>
+    <text style="font-style: italic; font-size: 5.6px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #475569" x="197.865659" y="31.876531" transform="rotate(-0 197.865659 31.876531)">Trust &amp; warning fatigue</text>
+   </g>
+   <g id="patch_46">
+    <path d="M 355.14 70.21116 
+C 342.89122 98.4024 296.345854 109.629 279.316076 128.417148 
+" clip-path="url(#p1ec0f7075e)" style="fill: none; stroke: #fdfcf9; stroke-width: 3; stroke-linecap: round"/>
+    <path d="M 355.14 70.21116 
+C 342.89122 98.4024 296.345854 109.629 279.316076 128.417148 
+" clip-path="url(#p1ec0f7075e)" style="fill: none; stroke: #64748b; stroke-width: 0.88; stroke-linecap: round"/>
+    <path d="M 355.14 70.21116 
+C 342.89122 98.4024 296.345854 109.629 279.316076 128.417148 
+" clip-path="url(#p1ec0f7075e)" style="fill: none; stroke: #64748b; stroke-width: 0.88; stroke-linecap: round"/>
+    <path d="M 283.215637 127.092978 
+L 279.316076 128.417148 
+L 280.251926 124.406639 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #64748b; stroke: #fdfcf9; stroke-width: 3; stroke-linecap: round"/>
+    <path d="M 283.215637 127.092978 
+L 279.316076 128.417148 
+L 280.251926 124.406639 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #64748b; stroke: #64748b; stroke-width: 0.88; stroke-linecap: round"/>
+    <path d="M 283.215637 127.092978 
+L 279.316076 128.417148 
+L 280.251926 124.406639 
+z
+" clip-path="url(#p1ec0f7075e)" style="fill: #64748b; stroke: #64748b; stroke-width: 0.88; stroke-linecap: round"/>
+   </g>
+   <g id="text_10">
+    <text style="font-size: 5.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #2d3748" transform="translate(58.921709 56.297576)">Accuracy of</text>
+    <text style="font-size: 5.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #2d3748" transform="translate(56.75981 63.099361)">flood forecast</text>
+   </g>
+   <g id="text_11">
+    <text style="font-size: 5.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #2d3748" transform="translate(26.74755 91.224776)">Severity of</text>
+    <text style="font-size: 5.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #2d3748" transform="translate(20.111832 98.026561)">forecasted flood</text>
+   </g>
+   <g id="text_12">
+    <text style="font-size: 5.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #2d3748" transform="translate(24.0963 126.669686)">Flood</text>
+    <text style="font-size: 5.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #2d3748" transform="translate(21.16694 132.953761)">forecast</text>
+   </g>
+   <g id="text_13">
+    <text style="font-size: 5.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #1b2430" transform="translate(61.897605 126.118155)">Authorities are willing</text>
+    <text style="font-size: 5.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #1b2430" transform="translate(72.384937 132.91994)">to issue alert</text>
+   </g>
+   <g id="text_14">
+    <text style="font-size: 5.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #1b2430" transform="translate(57.268124 157.802115)">Authorities have capacity</text>
+    <text style="font-size: 5.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #1b2430" transform="translate(72.384937 164.6039)">to issue alert</text>
+   </g>
+   <g id="text_15">
+    <text style="font-size: 5.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #1b2430" transform="translate(61.896304 189.538646)">Authorities know how</text>
+    <text style="font-size: 5.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #1b2430" transform="translate(72.384937 195.7889)">to issue alert</text>
+   </g>
+   <g id="text_16">
+    <text style="font-weight: 700; font-size: 6px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #0f2942" transform="translate(134.583334 138.300272)">Flood</text>
+    <text style="font-weight: 700; font-size: 6px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #0f2942" transform="translate(136.409584 145.057303)">alert</text>
+   </g>
+   <g id="text_17">
+    <text style="font-size: 5.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #2d3748" transform="translate(180.59085 86.786707)">Reach of alert</text>
+    <text style="font-size: 5.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #2d3748" transform="translate(169.021268 93.00314)">dissemination channels</text>
+   </g>
+   <g id="text_18">
+    <text style="font-weight: 700; font-size: 6px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #0f2942" transform="translate(180.864565 138.300272)">Flood alerts</text>
+    <text style="font-weight: 700; font-size: 6px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #0f2942" transform="translate(185.690815 145.057303)">received</text>
+   </g>
+   <g id="text_19">
+    <text style="font-size: 5.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #2d3748" transform="translate(181.209588 172.056296)">Utility of flood</text>
+    <text style="font-size: 5.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #2d3748" transform="translate(182.59492 178.82426)">alert content</text>
+   </g>
+   <g id="text_20">
+    <text style="font-size: 5.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #2d3748" transform="translate(181.622803 198.054787)">Timeliness of</text>
+    <text style="font-size: 5.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #2d3748" transform="translate(185.67994 204.305041)">flood alert</text>
+   </g>
+   <g id="text_21">
+    <text style="font-size: 5.65px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #1b2430" transform="translate(247.992526 77.937472)">People are willing</text>
+    <text style="font-size: 5.65px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #1b2430" transform="translate(253.330893 84.861812)">to take action</text>
+   </g>
+   <g id="text_22">
+    <text style="font-size: 5.65px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #1b2430" transform="translate(247.991202 137.845778)">People know how</text>
+    <text style="font-size: 5.65px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #1b2430" transform="translate(253.330893 144.737012)">to take action</text>
+   </g>
+   <g id="text_23">
+    <text style="font-size: 5.65px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #1b2430" transform="translate(243.279631 189.455032)">People have capacity</text>
+    <text style="font-size: 5.65px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #1b2430" transform="translate(253.330893 196.379372)">to take action</text>
+   </g>
+   <g id="text_24">
+    <text style="font-weight: 700; font-size: 6px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #0e3d33" transform="translate(314.912092 138.300272)">Protective</text>
+    <text style="font-weight: 700; font-size: 6px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #0e3d33" transform="translate(311.076311 144.461053)">early actions</text>
+   </g>
+   <g id="text_25">
+    <text style="font-weight: 700; font-size: 6px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #5a1818" transform="translate(371.229773 138.300272)">Flood</text>
+    <text style="font-weight: 700; font-size: 6px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #5a1818" transform="translate(368.055398 144.500428)">impacts</text>
+   </g>
+   <g id="text_26">
+    <text style="font-size: 5.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #2d3748" transform="translate(354.731287 58.791075)">Experience</text>
+    <text style="font-size: 5.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #2d3748" transform="translate(355.808768 65.042629)">of flooding</text>
+   </g>
+   <g id="text_27">
+    <text style="font-weight: 700; font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #334155" x="97.180683" y="112.059569" transform="rotate(-0 97.180683 112.059569)">+</text>
+   </g>
+   <g id="text_28">
+    <text style="font-weight: 700; font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #334155" x="67.293659" y="111.061649" transform="rotate(-0 67.293659 111.061649)">+</text>
+   </g>
+   <g id="text_29">
+    <text style="font-weight: 700; font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #334155" x="123.148098" y="127.527329" transform="rotate(-0 123.148098 127.527329)">+</text>
+   </g>
+   <g id="text_30">
+    <text style="font-weight: 700; font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #334155" x="122.658146" y="158.462849" transform="rotate(-0 122.658146 158.462849)">+</text>
+   </g>
+   <g id="text_31">
+    <text style="font-weight: 700; font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #334155" x="146.665756" y="159.460769" transform="rotate(-0 146.665756 159.460769)">+</text>
+   </g>
+   <g id="text_32">
+    <text style="font-weight: 700; font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #334155" x="165.617069" y="136.758089" transform="rotate(-0 165.617069 136.758089)">+</text>
+   </g>
+   <g id="text_33">
+    <text style="font-weight: 700; font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #334155" x="202.030244" y="116.04127" transform="rotate(-0 202.030244 116.04127)">+</text>
+   </g>
+   <g id="text_34">
+    <text style="font-weight: 700; font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #334155" x="235.836878" y="77.132369" transform="rotate(-0 235.836878 77.132369)">+</text>
+   </g>
+   <g id="text_35">
+    <text style="font-weight: 700; font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #334155" x="231.417518" y="136.758089" transform="rotate(-0 231.417518 136.758089)">+</text>
+   </g>
+   <g id="text_36">
+    <text style="font-weight: 700; font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #334155" x="233.387122" y="156.217529" transform="rotate(-0 233.387122 156.217529)">+</text>
+   </g>
+   <g id="text_37">
+    <text style="font-weight: 700; font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #334155" x="234.367024" y="198.878609" transform="rotate(-0 234.367024 198.878609)">+</text>
+   </g>
+   <g id="text_38">
+    <text style="font-weight: 700; font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #334155" x="334.807024" y="122.537729" transform="rotate(-0 334.807024 122.537729)">+</text>
+   </g>
+   <g id="text_39">
+    <text style="font-weight: 700; font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #334155" x="305.106181" y="136.758089" transform="rotate(-0 305.106181 136.758089)">+</text>
+   </g>
+   <g id="text_40">
+    <text style="font-weight: 700; font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #334155" x="334.807024" y="160.458689" transform="rotate(-0 334.807024 160.458689)">+</text>
+   </g>
+   <g id="text_41">
+    <text style="font-weight: 700; font-size: 7.6px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #942e2e" x="355.629951" y="136.543797" transform="rotate(-0 355.629951 136.543797)">−</text>
+   </g>
+   <g id="text_42">
+    <text style="font-weight: 700; font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #334155" x="253.965073" y="64.658369" transform="rotate(-0 253.965073 64.658369)">+</text>
+   </g>
+   <g id="text_43">
+    <text style="font-weight: 700; font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #334155" x="394.336098" y="95.094929" transform="rotate(-0 394.336098 95.094929)">+</text>
+   </g>
+   <g id="text_44">
+    <text style="font-weight: 700; font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #334155" x="287.281756" y="64.658369" transform="rotate(-0 287.281756 64.658369)">+</text>
+   </g>
+   <g id="text_45">
+    <text style="font-weight: 700; font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #334155" x="285.321951" y="123.036689" transform="rotate(-0 285.321951 123.036689)">+</text>
+   </g>
   </g>
-
-  <!-- ========================================================================= -->
-  <!-- CAUSAL RELATIONSHIP ARCS & POLARITIES (+ / −)                             -->
-  <!-- ========================================================================= -->
-
-  <!-- Flood forecast -> Authorities are willing to issue alert -->
-  <path d="M 120, 350 C 135, 350 145, 365 155, 375" fill="none" stroke="#cbd5e1" stroke-width="2" marker-end="url(#arrow-gray)"/>
-
-  <!-- Severity of forecasted flood -> Authorities are willing to issue alert -->
-  <path d="M 160, 245 C 185, 245 200, 280 205, 350" fill="none" stroke="#7dd3fc" stroke-width="2.2" marker-end="url(#arrow-blue)"/>
-  <text x="212" y="344" class="polarity-pos">+</text>
-
-  <!-- Accuracy of flood forecast -> Authorities are willing to issue alert -->
-  <path d="M 230, 160 C 255, 175 260, 250 240, 350" fill="none" stroke="#7dd3fc" stroke-width="2.2" marker-end="url(#arrow-blue)"/>
-  <text x="249" y="344" class="polarity-pos">+</text>
-
-  <!-- Long Sweeping Top Arc: Accuracy of flood forecast -> People are willing to take action -->
-  <path d="M 270, 125 C 380, 20 600, 20 705, 175" fill="none" stroke="#7dd3fc" stroke-width="2.2" marker-end="url(#arrow-blue)"/>
-  <text x="698" y="160" class="polarity-pos">+</text>
-
-  <!-- Authorities are willing to issue alert -> Flood alert -->
-  <path d="M 290, 375 C 305, 375 315, 385 325, 395" fill="none" stroke="#7dd3fc" stroke-width="2.2" marker-end="url(#arrow-blue)"/>
-  <text x="321" y="385" class="polarity-pos">+</text>
-
-  <!-- Authorities have capacity to issue alert -> Flood alert -->
-  <path d="M 285, 475 C 305, 475 325, 455 340, 435" fill="none" stroke="#7dd3fc" stroke-width="2.2" marker-end="url(#arrow-blue)"/>
-  <text x="323" y="454" class="polarity-pos">+</text>
-
-  <!-- Authorities know how to issue alert -> Flood alert -->
-  <path d="M 275, 555 C 315, 555 345, 510 355, 440" fill="none" stroke="#7dd3fc" stroke-width="2.2" marker-end="url(#arrow-blue)"/>
-  <text x="342" y="468" class="polarity-pos">+</text>
-
-  <!-- Reach of alert dissemination channels -> Flood alerts received -->
-  <path d="M 445, 275 C 475, 275 490, 305 500, 360" fill="none" stroke="#7dd3fc" stroke-width="2.2" marker-end="url(#arrow-blue)"/>
-  <text x="504" y="352" class="polarity-pos">+</text>
-
-  <!-- Flood alert -> Flood alerts received -->
-  <path d="M 410, 410 C 435, 410 460, 410 475, 410" fill="none" stroke="#7dd3fc" stroke-width="2.2" marker-end="url(#arrow-blue)"/>
-  <text x="462" y="401" class="polarity-pos">+</text>
-
-  <!-- Flood alerts received -> People are willing to take action -->
-  <path d="M 545, 365 C 570, 270 650, 215 695, 205" fill="none" stroke="#7dd3fc" stroke-width="2.2" marker-end="url(#arrow-blue)"/>
-  <text x="676" y="198" class="polarity-pos">+</text>
-
-  <!-- Flood alerts received -> People know how to take action -->
-  <path d="M 585, 385 C 625, 375 660, 380 690, 395" fill="none" stroke="#7dd3fc" stroke-width="2.2" marker-end="url(#arrow-blue)"/>
-  <text x="676" y="381" class="polarity-pos">+</text>
-
-  <!-- Utility of flood alert content -> People know how to take action -->
-  <path d="M 640, 520 C 675, 520 710, 480 730, 435" fill="none" stroke="#7dd3fc" stroke-width="2.2" marker-end="url(#arrow-blue)"/>
-  <text x="716" y="452" class="polarity-pos">+</text>
-
-  <!-- Timeliness of flood alert -> People have capacity to take action -->
-  <path d="M 525, 620 C 585, 620 635, 620 670, 600" fill="none" stroke="#7dd3fc" stroke-width="2.2" marker-end="url(#arrow-blue)"/>
-  <text x="652" y="601" class="polarity-pos">+</text>
-
-  <!-- People are willing to take action -> Protective early actions -->
-  <path d="M 795, 230 C 850, 270 880, 320 890, 360" fill="none" stroke="#7dd3fc" stroke-width="2.2" marker-end="url(#arrow-blue)"/>
-  <text x="895" y="352" class="polarity-pos">+</text>
-
-  <!-- People know how to take action -> Protective early actions -->
-  <path d="M 800, 405 C 830, 405 850, 405 865, 405" fill="none" stroke="#7dd3fc" stroke-width="2.2" marker-end="url(#arrow-blue)"/>
-  <text x="850" y="397" class="polarity-pos">+</text>
-
-  <!-- People have capacity to take action -> Protective early actions -->
-  <path d="M 800, 580 C 855, 570 885, 510 895, 445" fill="none" stroke="#7dd3fc" stroke-width="2.2" marker-end="url(#arrow-blue)"/>
-  <text x="879" y="460" class="polarity-pos">+</text>
-
-  <!-- Experience of flooding -> People are willing to take action -->
-  <path d="M 900, 125 C 850, 115 790, 125 765, 170" fill="none" stroke="#7dd3fc" stroke-width="2.2" marker-end="url(#arrow-blue)"/>
-  <text x="774" y="158" class="polarity-pos">+</text>
-
-  <!-- Experience of flooding -> People know how to take action -->
-  <path d="M 945, 155 C 930, 240 850, 340 790, 385" fill="none" stroke="#7dd3fc" stroke-width="2.2" marker-end="url(#arrow-blue)"/>
-  <text x="794" y="368" class="polarity-pos">+</text>
-
-  <!-- Protective early actions -> Flood impacts (NEGATIVE CAUSAL LINK) -->
-  <path d="M 990, 405 C 1030, 405 1060, 415 1085, 425" fill="none" stroke="#fda4af" stroke-width="2.6" marker-end="url(#arrow-red)"/>
-  <text x="1064" y="408" class="polarity-neg">−</text>
-
-  <!-- Flood impacts -> Experience of flooding (FEEDBACK LOOP) -->
-  <path d="M 1135, 410 C 1175, 330 1140, 180 1025, 140" fill="none" stroke="#7dd3fc" stroke-width="2.2" marker-end="url(#arrow-blue)"/>
-  <text x="1044" y="138" class="polarity-pos">+</text>
-
-
-  <!-- ========================================================================= -->
-  <!-- NODES / PILLS (Grouped & Styled)                                          -->
-  <!-- ========================================================================= -->
-
-  <!-- Node: Flood forecast -->
-  <g transform="translate(40, 330)">
-    <rect x="0" y="0" width="115" height="38" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2" filter="url(#card-shadow)"/>
-    <text x="57.5" y="23" class="node-text">Flood forecast</text>
-  </g>
-
-  <!-- Node: Severity of forecasted flood -->
-  <g transform="translate(50, 225)">
-    <rect x="0" y="0" width="145" height="42" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2" filter="url(#card-shadow)"/>
-    <text x="72.5" y="18" class="node-text">Severity of</text>
-    <text x="72.5" y="32" class="node-text">forecasted flood</text>
-  </g>
-
-  <!-- Node: Accuracy of flood forecast -->
-  <g transform="translate(135, 120)">
-    <rect x="0" y="0" width="145" height="42" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2" filter="url(#card-shadow)"/>
-    <text x="72.5" y="18" class="node-text">Accuracy of</text>
-    <text x="72.5" y="32" class="node-text">flood forecast</text>
-  </g>
-
-  <!-- Node: Authorities are willing to issue alert -->
-  <g transform="translate(155, 360)">
-    <rect x="0" y="0" width="155" height="44" rx="6" fill="#f0f9ff" stroke="#7dd3fc" stroke-width="1.4" filter="url(#card-shadow)"/>
-    <text x="77.5" y="18" class="node-text">Authorities are willing</text>
-    <text x="77.5" y="33" class="node-text">to issue alert</text>
-  </g>
-
-  <!-- Node: Authorities have capacity to issue alert -->
-  <g transform="translate(150, 460)">
-    <rect x="0" y="0" width="160" height="44" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2" filter="url(#card-shadow)"/>
-    <text x="80" y="18" class="node-text">Authorities have capacity</text>
-    <text x="80" y="33" class="node-text">to issue alert</text>
-  </g>
-
-  <!-- Node: Authorities know how to issue alert -->
-  <g transform="translate(150, 540)">
-    <rect x="0" y="0" width="160" height="44" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2" filter="url(#card-shadow)"/>
-    <text x="80" y="18" class="node-text">Authorities know how</text>
-    <text x="80" y="33" class="node-text">to issue alert</text>
-  </g>
-
-  <!-- Node: Flood alert -->
-  <g transform="translate(335, 390)">
-    <rect x="0" y="0" width="105" height="42" rx="6" fill="#e0f2fe" stroke="#38bdf8" stroke-width="1.8" filter="url(#card-shadow)"/>
-    <text x="52.5" y="26" class="node-text-bold" fill="#0369a1">Flood alert</text>
-  </g>
-
-  <!-- Node: Reach of alert dissemination channels -->
-  <g transform="translate(325, 235)">
-    <rect x="0" y="0" width="165" height="44" rx="6" fill="#f0f9ff" stroke="#7dd3fc" stroke-width="1.3" filter="url(#card-shadow)"/>
-    <text x="82.5" y="18" class="node-text">Reach of alert</text>
-    <text x="82.5" y="33" class="node-text">dissemination channels</text>
-  </g>
-
-  <!-- Node: Flood alerts received -->
-  <g transform="translate(485, 385)">
-    <rect x="0" y="0" width="135" height="44" rx="6" fill="#e0f2fe" stroke="#0284c7" stroke-width="1.8" filter="url(#card-shadow)"/>
-    <text x="67.5" y="27" class="node-text-bold" fill="#0369a1">Flood alerts received</text>
-  </g>
-
-  <!-- Node: Utility of flood alert content -->
-  <g transform="translate(530, 500)">
-    <rect x="0" y="0" width="145" height="42" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2" filter="url(#card-shadow)"/>
-    <text x="72.5" y="18" class="node-text">Utility of flood</text>
-    <text x="72.5" y="32" class="node-text">alert content</text>
-  </g>
-
-  <!-- Node: Timeliness of flood alert -->
-  <g transform="translate(435, 600)">
-    <rect x="0" y="0" width="140" height="38" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2" filter="url(#card-shadow)"/>
-    <text x="70" y="23" class="node-text">Timeliness of flood alert</text>
-  </g>
-
-  <!-- Node: People are willing to take action -->
-  <g transform="translate(685, 175)">
-    <rect x="0" y="0" width="145" height="44" rx="6" fill="#fefce8" stroke="#fde047" stroke-width="1.4" filter="url(#card-shadow)"/>
-    <text x="72.5" y="18" class="node-text">People are willing</text>
-    <text x="72.5" y="33" class="node-text">to take action</text>
-  </g>
-
-  <!-- Node: People know how to take action -->
-  <g transform="translate(690, 385)">
-    <rect x="0" y="0" width="145" height="44" rx="6" fill="#fefce8" stroke="#fde047" stroke-width="1.4" filter="url(#card-shadow)"/>
-    <text x="72.5" y="18" class="node-text">People know how</text>
-    <text x="72.5" y="33" class="node-text">to take action</text>
-  </g>
-
-  <!-- Node: People have capacity to take action -->
-  <g transform="translate(670, 560)">
-    <rect x="0" y="0" width="145" height="44" rx="6" fill="#fefce8" stroke="#fde047" stroke-width="1.4" filter="url(#card-shadow)"/>
-    <text x="72.5" y="18" class="node-text">People have capacity</text>
-    <text x="72.5" y="33" class="node-text">to take action</text>
-  </g>
-
-  <!-- Node: Experience of flooding -->
-  <g transform="translate(900, 115)">
-    <rect x="0" y="0" width="140" height="40" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2" filter="url(#card-shadow)"/>
-    <text x="70" y="24" class="node-text">Experience of flooding</text>
-  </g>
-
-  <!-- Node: Protective early actions -->
-  <g transform="translate(875, 385)">
-    <rect x="0" y="0" width="145" height="44" rx="8" fill="#f0fdf4" stroke="#4ade80" stroke-width="1.8" filter="url(#card-shadow)"/>
-    <text x="72.5" y="27" class="node-text-bold" fill="#15803d">Protective early actions</text>
-  </g>
-
-  <!-- Node: Flood impacts -->
-  <g transform="translate(1075, 410)">
-    <rect x="0" y="0" width="105" height="42" rx="8" fill="#fff1f2" stroke="#fb7185" stroke-width="1.8" filter="url(#card-shadow)"/>
-    <text x="52.5" y="26" class="node-text-bold" fill="#be123c">Flood impacts</text>
-  </g>
-
-  <!-- ========================================================================= -->
-  <!-- LEGEND                                                                    -->
-  <!-- ========================================================================= -->
-  <g transform="translate(40, 600)">
-    <rect x="0" y="0" width="200" height="45" rx="4" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" filter="url(#card-shadow)"/>
-    <text x="12" y="16" class="legend-title">Legend</text>
-    
-    <line x1="12" y1="26" x2="32" y2="26" stroke="#7dd3fc" stroke-width="2.5"/>
-    <text x="38" y="29" class="legend-text">Adds to / same direction (+)</text>
-    
-    <line x1="12" y1="38" x2="32" y2="38" stroke="#fda4af" stroke-width="2.5"/>
-    <text x="38" y="41" class="legend-text">Subtracts from / opposite direction (−)</text>
-  </g>
-
+ </g>
+ <defs>
+  <clipPath id="p1ec0f7075e">
+   <rect x="3.6" y="3.6" width="401.76" height="224.532"/>
+  </clipPath>
+ </defs>
 </svg>

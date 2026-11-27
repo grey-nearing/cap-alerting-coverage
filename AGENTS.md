@@ -38,12 +38,14 @@ This document is written for autonomous coding and verification agents. For huma
       └──► cap-gap reproduce-tier1  [scripts/04_score_benchmark.py]
                ├──► scoring.run_full_scoring()
                │        ──► pr_curves_summary.csv, cap_continuous_pr.csv, dhm_ffm_2d_grid.csv,
-               │            lead_window_sweep.csv, single_lead_decay.csv, sensitivity_audits.csv,
-               │            ffm_gs_slices_pr.csv
+               │            fine_ffm_pr_curves.csv, lead_window_sweep.csv, single_lead_decay.csv,
+               │            sensitivity_audits.csv, ffm_gs_slices_pr.csv
                └──► manuscript_outputs.generate_manuscript_tables_and_figures()
                         ├──► gauge_verification.run_gauge_verification()
                         │        ──► table2_gauge_vs_catalogs.csv (partial pass-through),
-                        │            stream_gauge_nse_summary.csv (Tier-1 pass-through)
+                        │            stream_gauge_nse_summary.csv (Tier-1 pass-through),
+                        │            stream_gauge_nse_ecdf_quantiles.csv (Tier-1 pass-through),
+                        │            stream_gauge_precision_iqr.csv (Tier-1 pass-through)
                         ├──► validation_audit.run_validation_audit()
                         │        ──► ed_table4_validation_summary.csv,
                         │            validation_confusion_counts.csv,
@@ -52,11 +54,11 @@ This document is written for autonomous coding and verification agents. For huma
                              ed_table3_sensitivity_matrix.csv, ed_table5_full_benchmark.csv,
                              ed_table6a_annual_onboarding.csv, ed_table6b_late_onboarders.csv,
                              country_coverage_and_gains_150.csv, cap_country_hazard_counts_2021_2025.csv,
-                             reproduction_summary.json, 13 publication PNG figures (300 DPI)
+                             reproduction_summary.json, 11 single-composite publication figures (PDF/SVG/300-DPI PNG)
 
   Figure-only re-render:
       └──► cap-gap build-figures  [scripts/05_generate_manuscript_outputs.py]
-               └──► manuscript_outputs.render_figures_from_results() ──► 13 PNG figures
+               └──► manuscript_outputs.render_figures_from_results() ──► 11 figures (33 PDF/SVG/PNG files)
 ```
 
 ---
@@ -67,7 +69,9 @@ This document is written for autonomous coding and verification agents. For huma
 |---|---|
 | `src/cap_alerting_coverage/config.py` | Date grid (`2020-12-15`..`2025-12-31`, `D_TOTAL=1843`), return periods `[1.01,2,5,10,20,25,50,100]`, FFM thresholds, `LEGACY_EXCLUDED_19`, `ISO_UNIFY`, `default_data_inputs_dir`, `ProjectPaths` env/arg resolution |
 | `src/cap_alerting_coverage/scoring.py` | Tier-1 vectorized benchmark evaluation (`score_boolean_matrix`), valid-date alignment, warning episode collapsing, PR curves, Pareto front, lead-time sweeps, sensitivity audits |
-| `src/cap_alerting_coverage/manuscript_outputs.py` | Table 1 (with exact McNemar *p*), ED Tables 1/3/5/6a/6b, per-country summary, and all 13 matplotlib figures (Figs 1–4, ED Figs 1–5; `ed-fig-1.png` panel `a` driven dynamically from `ed_table4_validation_summary.csv`) |
+| `src/cap_alerting_coverage/manuscript_outputs.py` | Table 1 (with exact McNemar *p*), ED/SI summary CSVs, per-country summary, and figure orchestration |
+| `src/cap_alerting_coverage/figure_style.py` | Shared Nature typography (`Arial`, editable PDF/SVG vector text), colorblind-safe palette, Robinson CRS loader, and multi-format PDF/SVG/PNG exporter |
+| `src/cap_alerting_coverage/figure_fleet.py` | All 11 single-composite publication figures (Figs. 1–5, ED Figs. 1–5, Supp. Fig. 1; `ed-fig-1` panel `a` driven dynamically from `ed_table4_validation_summary.csv`) |
 | `src/cap_alerting_coverage/gauge_verification.py` | Table 2 & multi-model stream-gauge NSE compilation (Tier-1 pass-through for raw gauge columns + recomputed DHM catalog cols; Tier-2 full raw gauge parquet support) |
 | `src/cap_alerting_coverage/validation_audit.py` | Deterministic N=400 de-identified confusion matrix, spatial precision, Wald/Wilson/CP CIs, and ED Table 4 (requires explicit de-identified input file; no hard-coded fallback counts) |
 | `src/cap_alerting_coverage/keywords.py` | Multilingual flood/storm exclusion (`EXCL_RE`), permissive (`PERM_RE`), restrictive (`REST_RE`), multi-hazard regexes, OASIS `score64` (`1..64`) |
@@ -107,14 +111,14 @@ This document is written for autonomous coding and verification agents. For huma
 * `ffm_gid1_daily_2021_2025.parquet`: `gid_1: str`, `country_iso3: str`, `valid_date: timestamp[ms]` (normalized via `pd.to_datetime`), `max_prob: float32` (`[0.0, 1.0]`).
 * Discrete riverine tier cubes (`.npz`, `uint8` values in `0..8` where `1..8` map to `[1.01, 2, 5, 10, 20, 25, 50, 100]` yr RP):
   * `dhm_10d_gid1_multilead_2021_2025.npz`: `tiers` shape `(N_gid1, 1843, 11)`, `gid_1`, `country_iso3`, `issue_dates`. (Optional `dhm_0d_gid1_daily_2021_2025.npz` equals `dhm_10d[:, :, 0]`.)
-  * `geoglows_v2_retro_gid1_daily_2021_2025.npz`: `tiers` shape `(N_gid1, 1843)`, `gid_1`, `country_iso3`, `valid_dates`.
-  * `geoglows_v2_oper_gid1_multilead_2024_2025.npz`: `tiers` shape `(N_gid1, 640, 4, 15)` (`products = ["EnsMedian", "EnsMean", "EnsP75", "HRES"]`), `gid_1`, `country_iso3`, `issue_dates`.
+  * `geoglows_v2_retro_gid1_daily_2021_2025.npz`: `tiers` shape `(N_gid1, 1843)`, `gid_1`, `country_iso3`, `valid_dates` (1981–2025 Bulletin 17C LP3 fitted directly on the S3 retrospective discharge archive).
+  * `geoglows_v2_oper_gid1_multilead_2024_2025.npz`: `tiers` shape `(N_gid1, 640, 4, 15)` (`products = ["EnsMedian", "EnsMean", "EnsP75", "HRES"]`), `gid_1`, `country_iso3`, `issue_dates` (natively published RAPID return periods `[2, 5, 10, 25, 50, 100]` yr via `GEOGLOWS_OPER_RP_TIERS`; extrapolated tier `1` zeroed out).
   * `glofas_v5_gid1_daily_2021_2025.npz`: `tiers` shape `(N_gid1, 1843)`, `gid_1`, `country_iso3`, `valid_dates`.
 * **Edge case:** GADM v4.1 assigns `gid_1 == "?"` to one unnamed unit in `UKR` (`22` Catalog B events, `2` CAP daily rows, `1,843` FFM rows, `0` Catalog A events); retain verbatim for exact index alignment.
 
 ### 3.3 `03_summary_results/` & `04_validation_deidentified/`
-* `SHA256SUMS.txt` indexes `51` uploadable files (`LICENSE.txt`, `zenodo.json`, `DATA_DICTIONARY.md`, `Supplementary_Data_1_Global_Alerting_Authorities_Audit_185_Jurisdictions.csv`, plus `01_`–`04_`).
-* `03_summary_results/` contains the 16 `PARITY_TABLES` CSVs plus 3 static upstream audit artifacts (`catalog_a_subnational_resolution_by_country.csv`, `montandon_nonhuman_unit_audit.csv`, `montandon_and_demographics_audit_summary.json`).
+* `SHA256SUMS.txt` indexes `54` uploadable files (`LICENSE.txt`, `zenodo.json`, `DATA_DICTIONARY.md`, `Supplementary_Data_1_Global_Alerting_Authorities_Audit_185_Jurisdictions.csv`, plus `01_`–`04_`).
+* `03_summary_results/` contains the 19 `PARITY_TABLES` CSVs (including `fine_ffm_pr_curves.csv`, `stream_gauge_nse_ecdf_quantiles.csv`, and `stream_gauge_precision_iqr.csv`) plus 3 static upstream audit artifacts (`catalog_a_subnational_resolution_by_country.csv`, `montandon_nonhuman_unit_audit.csv`, `montandon_and_demographics_audit_summary.json`).
 * `04_validation_deidentified/validation_n400_deidentified.csv`: exactly 400 rows × 30 strictly boolean/categorical/integer columns defined in `schemas.DEIDENTIFIED_VALIDATION_COLUMNS`. Zero raw CAP text, URLs, emails, XML tags, UUIDs, exact dates, or reviewer notes; any non-numeric/non-boolean cell `> 64` characters triggers `ValueError`.
 
 ---

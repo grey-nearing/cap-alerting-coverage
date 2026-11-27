@@ -97,6 +97,7 @@ def test_synthetic_tier1_pipeline_and_cli(tmp_path: Path, monkeypatch: pytest.Mo
         "pr_curves_summary.csv",
         "cap_continuous_pr.csv",
         "dhm_ffm_2d_grid.csv",
+        "fine_ffm_pr_curves.csv",
         "lead_window_sweep.csv",
         "single_lead_decay.csv",
         "sensitivity_audits.csv",
@@ -104,6 +105,8 @@ def test_synthetic_tier1_pipeline_and_cli(tmp_path: Path, monkeypatch: pytest.Mo
         "table1_summary.csv",
         "table2_gauge_vs_catalogs.csv",
         "stream_gauge_nse_summary.csv",
+        "stream_gauge_nse_ecdf_quantiles.csv",
+        "stream_gauge_precision_iqr.csv",
         "ed_table1_cohort_d_35.csv",
         "ed_table3_sensitivity_matrix.csv",
         "ed_table4_validation_summary.csv",
@@ -124,6 +127,11 @@ def test_synthetic_tier1_pipeline_and_cli(tmp_path: Path, monkeypatch: pytest.Mo
     t1 = pd.read_csv(results_dir / "table1_summary.csv")
     assert {"2021_2025", "2024_2025"} <= set(t1["benchmark"])
     assert len(pd.read_csv(results_dir / "ed_table1_cohort_d_35.csv")) == 2  # JPN, BGD
+
+    # Operational GeoGLOWS v2 (RAPID routing) uses only natively published return periods (2..100 yr)
+    pr_df = pd.read_csv(results_dir / "pr_curves_summary.csv")
+    geo_oper_thrs = set(pr_df[pr_df["system"].str.contains("GeoGLOWS_Oper", na=False)]["thr_label"])
+    assert geo_oper_thrs == {"RP=2", "RP=5", "RP=10", "RP=25", "RP=50", "RP=100"}
 
     # Test CLI roundtrip: reproduce-tier1 -> verify-parity -> build-figures -> audit-validation
     results_dir_2 = tmp_path / "out_results_cli"
@@ -169,10 +177,24 @@ def test_synthetic_tier1_pipeline_and_cli(tmp_path: Path, monkeypatch: pytest.Mo
         ]
     )
     assert rc_fig == 0
-    rendered_pngs = sorted(figures_dir_2.glob("*.png"))
-    assert len(rendered_pngs) >= 12
-    for fig_p in rendered_pngs:
-        assert fig_p.stat().st_size > 5_000
+    expected_stems = (
+        "fig-1",
+        "fig-2",
+        "fig-3",
+        "fig-4",
+        "fig-5",
+        "ed-fig-1",
+        "ed-fig-2",
+        "ed-fig-3",
+        "ed-fig-4",
+        "ed-fig-5",
+        "supp-fig-1",
+    )
+    for stem in expected_stems:
+        for ext in ("pdf", "svg", "png"):
+            fig_p = figures_dir_2 / f"{stem}.{ext}"
+            assert fig_p.exists(), f"Missing rendered figure: {fig_p.name}"
+            assert fig_p.stat().st_size > 2_000, f"Unexpectedly small figure: {fig_p.name}"
 
     # Verify verify-parity fails when a reference table is missing unless --allow-missing is passed
     partial_ref = tmp_path / "partial_ref"

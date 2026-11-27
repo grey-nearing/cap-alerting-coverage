@@ -24,6 +24,16 @@ BENCHMARKS: tuple[tuple[str, str, str], ...] = (
 
 # Threshold grids matching the manuscript benchmark
 RETURN_PERIODS: tuple[float, ...] = (1.01, 2.0, 5.0, 10.0, 20.0, 25.0, 50.0, 100.0)
+# Natively published GeoGLOWS v2 RAPID-era return periods (tier index, return period yr);
+# omits extrapolated 1.01-yr and interpolated 20-yr levels for operational GeoGLOWS v2 forecasts.
+GEOGLOWS_OPER_RP_TIERS: tuple[tuple[int, float], ...] = (
+    (2, 2.0),
+    (3, 5.0),
+    (4, 10.0),
+    (6, 25.0),
+    (7, 50.0),
+    (8, 100.0),
+)
 FFM_THRESHOLDS: tuple[float, ...] = (0.95, 0.90, 0.80, 0.70, 0.60, 0.50, 0.40, 0.30, 0.20, 0.10, 0.05)
 CAP_SEVERITIES: tuple[tuple[int, str], ...] = (
     (4, "Extreme"),

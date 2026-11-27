@@ -14,8 +14,9 @@ import pandas as pd
 import requests
 from requests.adapters import HTTPAdapter
 
-from cap_alerting_coverage.config import D_TOTAL, ProjectPaths
+from cap_alerting_coverage.config import D_TOTAL, RETURN_PERIODS, ProjectPaths
 from cap_alerting_coverage.pipeline.blosc_decode import decode_blosc
+from cap_alerting_coverage.stats_utils import fit_lp3_return_periods
 
 DEFAULT_GEOGLOWS_S3_RETRO_URL = "https://geoglows-v2.s3-us-west-2.amazonaws.com/retrospective/daily.zarr"
 PRODUCTS: tuple[str, ...] = ("EnsMedian", "EnsMean", "EnsP75", "HRES")
@@ -81,6 +82,9 @@ def build_operational_multilead(
 
     oper_tiers = np.zeros((n_adm1, N_OPER_DAYS, 4, 15), dtype=np.uint8)
     np.maximum.at(oper_tiers, (df["adm1_idx"].values, df["day_idx"].values), parsed)
+    # Remove extrapolated 1.01-year tier (tier 1) from RAPID-era operational forecasts;
+    # GeoGLOWS v2 publishes RAPID return periods from 2-year through 100-year only.
+    oper_tiers[oper_tiers == 1] = 0
 
     issue_dates = pd.date_range("2024-04-01", periods=N_OPER_DAYS, freq="D")
     oper_npz = out_dir / "geoglows_v2_oper_gid1_multilead_2024_2025.npz"
@@ -102,16 +106,40 @@ def extract_retrospective_from_s3(
     meta_to_adm1: np.ndarray,
     out_dir: Path,
     s3_base: str = DEFAULT_GEOGLOWS_S3_RETRO_URL,
-    max_workers: int = 64,
+    max_workers: int = 96,
     wave_size: int = 3000,
+    fit_lp3_1981_2025: bool = True,
 ) -> Path:
-    """Stream GeoGLOWS v2 retrospective daily discharge from public AWS S3 into Admin-1 tiers."""
+    """Stream GeoGLOWS v2 retrospective daily discharge from public AWS S3 into Admin-1 tiers.
+
+    When ``fit_lp3_1981_2025=True`` (default), fits USGS Bulletin 17C Log-Pearson Type III
+    return periods (1.01-year through 100-year) directly to 1981–2025 calendar-year annual
+    maxima of the updated retrospective discharge archive, matching Google DHM and Copernicus
+    GloFAS v5 and eliminating both routing-era threshold mismatches and negative Gumbel
+    extrapolations.
+    """
     meta_z = np.load(meta_npz, allow_pickle=False)
     cids = meta_z["chunk_ids"]
     offs = meta_z["chunk_offsets"]
     cols = meta_z["cols"]
     gids = meta_z["gids"]
     rp8 = meta_z["rp8"]
+
+    # Read exact S3 time coordinate so 1981-2025 annual maxima and 2020-12-15..2025-12-31 indices
+    # remain exact regardless of how many post-2025 days are appended to daily.zarr.
+    zmeta = _get_session().get(f"{s3_base}/.zmetadata", timeout=30).json()["metadata"]
+    n_time_total = int(zmeta["time/.zarray"]["shape"][0])
+    q_chunk0_len = int(zmeta["Q/.zarray"]["chunks"][0])
+    t0_raw = np.frombuffer(decode_blosc(fetch_s3_with_retry(f"{s3_base}/time/0")), dtype="<f8")
+    t1_raw = np.frombuffer(decode_blosc(fetch_s3_with_retry(f"{s3_base}/time/1")), dtype="<f8")
+    t_all = np.concatenate([t0_raw, t1_raw])[:n_time_total]
+    dates = pd.to_datetime("1940-01-01") + pd.to_timedelta(t_all, unit="s")
+    yrs = dates.year.values
+    yr_indices = [np.where(yrs == y)[0] for y in range(1981, 2026)]
+    idx_target = np.where((dates >= "2020-12-15") & (dates <= "2025-12-31"))[0]
+    if len(idx_target) != D_TOTAL:
+        raise RuntimeError(f"Expected {D_TOTAL} target days (2020-12-15..2025-12-31), got {len(idx_target)}.")
+    n_days_needed = int(idx_target[-1]) + 1
 
     global_idx_list, reach_adm1_list, rp8_list = [], [], []
     for ci, cid in enumerate(cids):
@@ -140,28 +168,59 @@ def extract_retrospective_from_s3(
 
     def _process_chunk(task):
         c50, cols50, reach_adm1, reach_rp8 = task
-        b0 = fetch_s3_with_retry(f"{s3_base}/Q/0.{c50}")
-        b1 = fetch_s3_with_retry(f"{s3_base}/Q/1.{c50}")
-        arr0 = np.frombuffer(decode_blosc(b0), dtype="<f4").reshape(31047, 50)[29569:, cols50]
-        arr1 = np.frombuffer(decode_blosc(b1), dtype="<f4").reshape(31047, 50)[:365, cols50]
-        q = np.concatenate([arr0, arr1], axis=0)
-        valid_rp8 = np.where(np.isfinite(reach_rp8) & (reach_rp8 > 0), reach_rp8, np.inf)
-        tiers_rk = np.sum(q[:, :, None] >= valid_rp8[None, :, :], axis=-1).astype(np.uint8)
+        b0 = fetch_s3_with_retry(f"{s3_base}/Q/0.{c50}", max_retries=7)
+        b1 = fetch_s3_with_retry(f"{s3_base}/Q/1.{c50}", max_retries=7)
+        arr0 = np.frombuffer(decode_blosc(b0), dtype="<f4").reshape(q_chunk0_len, 50)[:, cols50]
+        arr1 = np.frombuffer(decode_blosc(b1), dtype="<f4").reshape(-1, 50)[:, cols50]
+        q_full = np.concatenate([arr0, arr1], axis=0)[:n_days_needed, :]
+
+        if fit_lp3_1981_2025:
+            ann_max = np.empty((len(yr_indices), q_full.shape[1]), dtype=np.float64)
+            for yi, yidx in enumerate(yr_indices):
+                sub_y = q_full[yidx, :]
+                has_fin = np.isfinite(sub_y).any(axis=0)
+                ann_max[yi, :] = np.where(
+                    has_fin, np.nanmax(np.where(np.isfinite(sub_y), sub_y, -np.inf), axis=0), np.nan
+                )
+            q_rp = fit_lp3_return_periods(ann_max, return_periods=RETURN_PERIODS)
+        else:
+            q_rp = reach_rp8.astype(np.float64)
+
+        valid_rp8 = np.where(np.isfinite(q_rp) & (q_rp > 0), q_rp, np.inf)
+        n_valid_rp101 = int(np.isfinite(valid_rp8[:, 0]).sum())
+        q_target = q_full[idx_target, :]
+        tiers_rk = np.sum(q_target[:, :, None] >= valid_rp8[None, :, :], axis=-1).astype(np.uint8)
         u_gids, inv = np.unique(reach_adm1, return_inverse=True)
         block_max = np.zeros((len(u_gids), D_TOTAL), dtype=np.uint8)
         for k in range(len(u_gids)):
             block_max[k] = tiers_rk[:, inv == k].max(axis=1)
-        return u_gids, block_max
+        return u_gids, block_max, len(cols50), n_valid_rp101
 
     retro_tiers = np.zeros((len(adm1_gids), D_TOTAL), dtype=np.uint8)
     n_waves = (len(tasks) + wave_size - 1) // wave_size
+    t_start = time.time()
+    done_chunks = 0
+    total_reaches = 0
+    total_valid_101 = 0
     with ThreadPoolExecutor(max_workers=max_workers) as ex:
         for w in range(n_waves):
             w_tasks = tasks[w * wave_size : (w + 1) * wave_size]
             futs = [ex.submit(_process_chunk, t) for t in w_tasks]
             for fut in as_completed(futs):
-                u_gids, block_max = fut.result()
+                u_gids, block_max, n_r, n_v101 = fut.result()
                 retro_tiers[u_gids] = np.maximum(retro_tiers[u_gids], block_max)
+                done_chunks += 1
+                total_reaches += n_r
+                total_valid_101 += n_v101
+            elapsed = time.time() - t_start
+            rate = done_chunks / max(elapsed, 1e-6)
+            eta_min = (len(tasks) - done_chunks) / max(rate, 1e-6) / 60.0
+            print(
+                f"  Wave {w + 1}/{n_waves}: {done_chunks:,}/{len(tasks):,} chunks "
+                f"({100.0 * done_chunks / len(tasks):.1f}%), {total_reaches:,} reaches "
+                f"(valid RP1.01={total_valid_101:,}), elapsed={elapsed / 60.0:.1f}m, ETA={eta_min:.1f}m",
+                flush=True,
+            )
 
     retro_dates = pd.date_range("2020-12-15", periods=D_TOTAL, freq="D")
     retro_npz = out_dir / "geoglows_v2_retro_gid1_daily_2021_2025.npz"
@@ -171,6 +230,11 @@ def extract_retrospective_from_s3(
         gid_1=np.asarray(adm1_gids, dtype=str),
         country_iso3=np.asarray(adm1_isos, dtype=str),
         valid_dates=np.asarray(retro_dates.strftime("%Y-%m-%d").values, dtype=str),
+    )
+    print(
+        f"Saved {retro_npz} ({total_reaches:,} reaches, valid RP1.01={total_valid_101:,}/{total_reaches:,}, "
+        f"fit_lp3_1981_2025={fit_lp3_1981_2025}) in {(time.time() - t_start) / 60.0:.1f}m.",
+        flush=True,
     )
     return retro_npz
 

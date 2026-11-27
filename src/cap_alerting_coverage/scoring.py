@@ -16,6 +16,7 @@ from cap_alerting_coverage.config import (
     D_TOTAL,
     DATES,
     FFM_THRESHOLDS,
+    GEOGLOWS_OPER_RP_TIERS,
     LEAD_WINDOWS_DAYS,
     LEGACY_EXCLUDED_19,
     RETURN_PERIODS,
@@ -924,7 +925,12 @@ def run_full_scoring(
                 w_dhm_cache: dict[tuple[str, int], np.ndarray] = {}
                 r_dhm_cache: dict[tuple[str, int], dict[str, Any]] = {}
                 for sys_k in rp_models:
-                    for ri, rp in enumerate(RETURN_PERIODS, start=1):
+                    rp_pairs = (
+                        GEOGLOWS_OPER_RP_TIERS
+                        if sys_k.startswith("GeoGLOWS_Oper_")
+                        else tuple(enumerate(RETURN_PERIODS, start=1))
+                    )
+                    for ri, rp in rp_pairs:
                         w_mat = make_w_matrix(data, sys_k, ri, lead_n, n_g)
                         res = score_boolean_matrix(w_mat, c_sl, fcov, g_mask_150, max_gap=2)
                         row_r = dict(res)
@@ -1087,27 +1093,31 @@ def run_full_scoring(
                             cp_pt["thr_order"] = idx_p
                             pr_rows.append(cp_pt)
 
-                union_targets: list[tuple[str, str, tuple[float, ...]]] = [
-                    ("CAP_Perm_U_DHM_0d", "DHM_0d", RETURN_PERIODS),
-                    ("CAP_Perm_U_DHM_Oper", "DHM_Oper", RETURN_PERIODS),
-                    ("CAP_Perm_U_FFM", "FFM", FFM_THRESHOLDS),
-                    ("CAP_Perm_U_GeoGLOWS_Retro_0d", "GeoGLOWS_Retro_0d", RETURN_PERIODS),
-                    ("CAP_Perm_U_GloFAS_v5_0d", "GloFAS_v5_0d", RETURN_PERIODS),
+                all_rp_pairs = tuple(enumerate(RETURN_PERIODS, start=1))
+                ffm_pairs = tuple((i + 1, tau) for i, tau in enumerate(FFM_THRESHOLDS))
+                union_targets: list[tuple[str, str, tuple[tuple[int, float], ...]]] = [
+                    ("CAP_Perm_U_DHM_0d", "DHM_0d", all_rp_pairs),
+                    ("CAP_Perm_U_DHM_Oper", "DHM_Oper", all_rp_pairs),
+                    ("CAP_Perm_U_FFM", "FFM", ffm_pairs),
+                    ("CAP_Perm_U_GeoGLOWS_Retro_0d", "GeoGLOWS_Retro_0d", all_rp_pairs),
+                    ("CAP_Perm_U_GloFAS_v5_0d", "GloFAS_v5_0d", all_rp_pairs),
                 ]
                 if b_name == "2024_2025":
                     union_targets.append(
-                        ("CAP_Perm_U_GeoGLOWS_Oper_EnsMedian", "GeoGLOWS_Oper_EnsMedian", RETURN_PERIODS)
+                        ("CAP_Perm_U_GeoGLOWS_Oper_EnsMedian", "GeoGLOWS_Oper_EnsMedian", GEOGLOWS_OPER_RP_TIERS)
                     )
-                    union_targets.append(("CAP_Perm_U_GeoGLOWS_Oper_HRES", "GeoGLOWS_Oper_HRES", RETURN_PERIODS))
+                    union_targets.append(
+                        ("CAP_Perm_U_GeoGLOWS_Oper_HRES", "GeoGLOWS_Oper_HRES", GEOGLOWS_OPER_RP_TIERS)
+                    )
 
-                for u_name, base_k, thr_seq in union_targets:
-                    for idx_t, t_val in enumerate(thr_seq):
+                for u_name, base_k, thr_pairs in union_targets:
+                    for thr_ord, t_val in thr_pairs:
                         if base_k == "FFM":
                             w_m = w_ffm_map[t_val]
-                        elif (base_k, idx_t + 1) in w_dhm_cache:
-                            w_m = w_dhm_cache[(base_k, idx_t + 1)]
+                        elif (base_k, thr_ord) in w_dhm_cache:
+                            w_m = w_dhm_cache[(base_k, thr_ord)]
                         else:
-                            w_m = make_w_matrix(data, base_k, idx_t + 1, lead_n, n_g)
+                            w_m = make_w_matrix(data, base_k, thr_ord, lead_n, n_g)
                         res = score_boolean_matrix(w_cap_p | w_m, c_sl, fcov, g_mask_150, max_gap=2)
                         if res["recall_pct"] < r_cap_p["recall_pct"] - 1e-6:
                             raise AssertionError(f"Union {u_name} recall below CAP baseline.")
@@ -1119,7 +1129,7 @@ def run_full_scoring(
                                 "lead_N": lead_n,
                                 "system": u_name,
                                 "thr_label": lbl,
-                                "thr_order": idx_t + 1,
+                                "thr_order": thr_ord,
                             }
                         )
                         pr_rows.append(res)
@@ -1419,6 +1429,10 @@ def run_full_scoring(
     df_ffm_slices = score_ffm_groundsource_slices(data, gid1_list, iso3_list, gid_to_idx, eval_150, df_pr_base=df_pr)
     df_ffm_slices.to_csv(paths.results_dir / "ffm_gs_slices_pr.csv", index=False)
 
+    # 5. Fine-resolution (0.02-step) empirical FFM & DHM+FFM curves + 2D Pareto ceiling
+    df_fine_ffm = compute_fine_ffm_pr_curves(data, gid1_list, iso3_list, gid_to_idx, eval_150)
+    df_fine_ffm.to_csv(paths.results_dir / "fine_ffm_pr_curves.csv", index=False)
+
     return {
         "gid1_list": gid1_list,
         "iso3_list": iso3_list,
@@ -1432,4 +1446,101 @@ def run_full_scoring(
         "df_single": df_single,
         "df_audit": df_audit,
         "df_ffm_slices": df_ffm_slices,
+        "df_fine_ffm": df_fine_ffm,
     }
+
+
+def compute_fine_ffm_pr_curves(
+    data: dict[str, Any],
+    gid1_list: list[str],
+    iso3_list: np.ndarray,
+    gid_to_idx: dict[str, int],
+    eval_150: set[str],
+    lead_n: int = 7,
+) -> pd.DataFrame:
+    """Compute exact 0.02-step empirical FFM, DHM(Q2yr)+FFM, and fine 2D Pareto PR curves."""
+    n_g = len(gid1_list)
+    g_mask_150 = np.isin(iso3_list, list(eval_150))
+
+    cat_a = data["cat_without_gs"]
+    cat_b = data["cat_with_gs"]
+    cat_gs_only = cat_b[~cat_b["has_idmc"] & ~cat_b["has_montandon"] & cat_b["has_groundsource"]].copy()
+
+    slices: dict[tuple[str, str], dict[str, Any]] = {}
+    fcovers: dict[tuple[str, str], np.ndarray] = {}
+    for cat_name, cat_df in (("Without_GS", cat_a), ("With_GS", cat_b), ("GS_Media_Only", cat_gs_only)):
+        for bm_name, b_start, b_end in BENCHMARKS:
+            sl = prepare_catalog_slice(cat_df, gid_to_idx, eval_150, b_start, b_end, lead_n=lead_n)
+            slices[(cat_name, bm_name)] = sl
+            fcovers[(cat_name, bm_name)] = build_fcover(n_g, sl)
+
+    taus = sorted(
+        {round(float(x), 2) for x in np.arange(0.05, 0.991, 0.02)}
+        | {0.05, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 0.95, 0.97, 0.98, 0.99}
+    )
+
+    w_cap_perm = data["cap_perm"] >= 1
+    dhm_oper_mats = {
+        rp_i: make_w_matrix(data, "DHM_Oper", rp_i, lead_n=lead_n, n_g=n_g)
+        for rp_i in range(1, len(RETURN_PERIODS) + 1)
+    }
+    w_dhm_q2 = dhm_oper_mats[2]
+    ffm_mats = {tau: (data["ffm_prob"] >= tau) for tau in taus}
+
+    curve_rows: list[dict[str, Any]] = []
+    for tau in taus:
+        wf = ffm_mats[tau]
+        combos = (
+            ("FFM_fine", wf),
+            ("CAP_Perm_U_FFM_fine", w_cap_perm | wf),
+            ("DHM_Oper_Q2_U_FFM_fine", w_dhm_q2 | wf),
+            ("CAP_Perm_U_DHM_Oper_Q2_U_FFM_fine", w_cap_perm | w_dhm_q2 | wf),
+        )
+        for sys_name, wm in combos:
+            for (cat_name, bm_name), sl in slices.items():
+                sc = score_boolean_matrix(wm, sl, fcovers[(cat_name, bm_name)], g_mask_150, max_gap=2)
+                curve_rows.append(
+                    {
+                        "catalog": cat_name,
+                        "benchmark": bm_name,
+                        "system": sys_name,
+                        "tau": tau,
+                        "rp": 2 if "Q2" in sys_name else np.nan,
+                        "thr_label": f"tau={tau:.2f}",
+                        **sc,
+                    }
+                )
+
+    pareto_rows: list[dict[str, Any]] = []
+    rp_options: list[tuple[int, str, np.ndarray | None]] = [(0, "off", None)] + [
+        (rp_i, str(RETURN_PERIODS[rp_i - 1]), dhm_oper_mats[rp_i]) for rp_i in range(1, len(RETURN_PERIODS) + 1)
+    ]
+    for mode_name, base_cap in (
+        ("DHM_Oper_U_FFM_Pareto_fine", None),
+        ("CAP_Perm_U_DHM_Oper_U_FFM_Pareto_fine", w_cap_perm),
+    ):
+        grid_by_slice: dict[tuple[str, str], list[dict[str, Any]]] = {
+            k: [] for k in slices if k[0] != "GS_Media_Only"
+        }
+        for rp_i, rp_lbl, w_dhm in rp_options:
+            for tau in taus:
+                wm = ffm_mats[tau] if w_dhm is None else (w_dhm | ffm_mats[tau])
+                if base_cap is not None:
+                    wm = base_cap | wm
+                for key in grid_by_slice:
+                    sc = score_boolean_matrix(wm, slices[key], fcovers[key], g_mask_150, max_gap=2)
+                    grid_by_slice[key].append(
+                        {
+                            "catalog": key[0],
+                            "benchmark": key[1],
+                            "system": mode_name,
+                            "tau": tau,
+                            "rp": RETURN_PERIODS[rp_i - 1] if rp_i > 0 else np.nan,
+                            "thr_label": f"RP={rp_lbl}|tau={tau:.2f}",
+                            **sc,
+                        }
+                    )
+        for grows in grid_by_slice.values():
+            pareto_rows.extend(extract_pareto_frontier(grows))
+
+    return pd.DataFrame(curve_rows + pareto_rows)

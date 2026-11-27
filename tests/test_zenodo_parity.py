@@ -45,7 +45,7 @@ def test_zenodo_checksums_and_schemas():
     root = _zenodo_root()
     if (root / "SHA256SUMS.txt").exists():
         verified = verify_zenodo_checksums(root)
-        assert len(verified) == 51
+        assert len(verified) == 54
 
     # Validate event catalogs (strictly non-redistribution & schema compliant)
     for fname in (

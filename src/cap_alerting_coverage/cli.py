@@ -24,6 +24,8 @@ PARITY_TABLES: tuple[str, ...] = (
     "table1_summary.csv",
     "table2_gauge_vs_catalogs.csv",
     "stream_gauge_nse_summary.csv",
+    "stream_gauge_nse_ecdf_quantiles.csv",
+    "stream_gauge_precision_iqr.csv",
     "ed_table1_cohort_d_35.csv",
     "ed_table3_sensitivity_matrix.csv",
     "ed_table5_full_benchmark.csv",
@@ -33,6 +35,7 @@ PARITY_TABLES: tuple[str, ...] = (
     "pr_curves_summary.csv",
     "cap_continuous_pr.csv",
     "dhm_ffm_2d_grid.csv",
+    "fine_ffm_pr_curves.csv",
     "lead_window_sweep.csv",
     "single_lead_decay.csv",
     "sensitivity_audits.csv",
@@ -46,6 +49,8 @@ VALIDATION_PARITY_TABLES: tuple[str, ...] = (
 
 PASS_THROUGH_TAGS: dict[str, str] = {
     "stream_gauge_nse_summary.csv": " [PASS-THROUGH]",
+    "stream_gauge_nse_ecdf_quantiles.csv": " [PASS-THROUGH]",
+    "stream_gauge_precision_iqr.csv": " [PASS-THROUGH]",
     "table2_gauge_vs_catalogs.csv": " [PARTIAL PASS-THROUGH]",
 }
 

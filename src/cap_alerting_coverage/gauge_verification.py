@@ -151,6 +151,90 @@ def build_table2_gauge_vs_catalogs(
     return pd.DataFrame(rows)
 
 
+def build_stream_gauge_nse_ecdf_quantiles(
+    dhm_gauged_metrics: pd.DataFrame,
+    nse_benchmark: pd.DataFrame,
+    n_points: int = 400,
+) -> pd.DataFrame:
+    """Build clean-room anonymized NSE ECDF curves (zero gauge IDs or raw time series)."""
+    valid_11k = nse_benchmark[
+        (nse_benchmark["is_valid_10pct"].astype(bool)) & (nse_benchmark["valid_obs_days"] >= 365)
+    ]
+    valid_3m = valid_11k[valid_11k["nse_geoglows_v2"].notna()].copy()
+    all_dhm = dhm_gauged_metrics["NSE"].dropna().to_numpy(dtype=float)
+
+    n_shared = len(valid_3m)
+    n_all = len(all_dhm)
+    series_specs = (
+        ("dhm_shared_9756", f"Google DHM (shared; n = {n_shared:,})", valid_3m["nse_dhm"].to_numpy(dtype=float)),
+        ("dhm_all_18047", f"Google DHM (all gauges; n = {n_all:,})", all_dhm),
+        (
+            "glofas_v5_shared_9756",
+            f"Copernicus GloFAS v5 (n = {n_shared:,})",
+            valid_3m["nse_glofas_v5"].to_numpy(dtype=float),
+        ),
+        (
+            "geoglows_v2_shared_9756",
+            f"GeoGLOWS v2 (n = {n_shared:,})",
+            valid_3m["nse_geoglows_v2"].to_numpy(dtype=float),
+        ),
+    )
+
+    rows = []
+    for key, label, vals in series_specs:
+        if len(vals) == 0:
+            continue
+        s = np.sort(vals)
+        y = np.arange(1, len(s) + 1) / len(s)
+        med = round(float(np.median(vals)), 4)
+        pos_pct = round(float((vals > 0).mean() * 100.0), 2)
+        cdf_m1 = float((s < -1.0).mean())
+        m = s >= -1.0
+        xs = np.concatenate(([-1.0], s[m]))
+        ys = np.concatenate(([cdf_m1], y[m]))
+        idx = np.unique(np.linspace(0, len(xs) - 1, n_points).astype(int))
+        for xi, yi in zip(xs[idx], ys[idx]):
+            rows.append(
+                {
+                    "series_key": key,
+                    "series_label": label,
+                    "n_gauges": int(len(vals)),
+                    "median_nse": med,
+                    "pct_positive_nse": pos_pct,
+                    "nse_value": round(float(xi), 5),
+                    "ecdf_prob": round(float(yi), 6),
+                }
+            )
+    return pd.DataFrame(rows)
+
+
+def build_stream_gauge_precision_iqr(
+    dhm_gauged_metrics: pd.DataFrame,
+    return_periods: Sequence[int] = TABLE2_RETURN_PERIODS,
+) -> pd.DataFrame:
+    """Build clean-room anonymized gauge precision quartiles across return periods."""
+    rows = []
+    for rp in return_periods:
+        col = f"return_period_{rp}_window_2_precision"
+        if col not in dhm_gauged_metrics.columns:
+            continue
+        vals = dhm_gauged_metrics[col].dropna().to_numpy(dtype=float) * 100.0
+        if len(vals) == 0:
+            continue
+        q25, med, q75 = np.percentile(vals, [25, 50, 75])
+        rows.append(
+            {
+                "rp_yr": int(rp),
+                "gauge_n": int(len(vals)),
+                "gauge_precision_mean_pct": round(float(np.mean(vals)), 3),
+                "gauge_precision_q25_pct": round(float(q25), 3),
+                "gauge_precision_median_pct": round(float(med), 3),
+                "gauge_precision_q75_pct": round(float(q75), 3),
+            }
+        )
+    return pd.DataFrame(rows)
+
+
 def run_gauge_verification(
     pr_curves_csv: str | Path,
     results_dir: str | Path,
@@ -158,8 +242,10 @@ def run_gauge_verification(
     nse_benchmark_csv: str | Path | None = None,
     reference_table2_csv: str | Path | None = None,
     reference_nse_summary_csv: str | Path | None = None,
+    reference_nse_ecdf_csv: str | Path | None = None,
+    reference_precision_iqr_csv: str | Path | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame | None]:
-    """Generate Table 2 and stream-gauge NSE summary cleanly in either Tier-1 or Tier-2 mode."""
+    """Generate Table 2 and stream-gauge NSE/ECDF/IQR summaries cleanly in Tier-1 or Tier-2 mode."""
     out_dir = Path(results_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     df_pr = pd.read_csv(pr_curves_csv)
@@ -182,9 +268,19 @@ def run_gauge_verification(
     if gm_df is not None and nse_df is not None:
         nse_summary = summarize_stream_gauge_nse(gm_df, nse_df)
         nse_summary.to_csv(out_dir / "stream_gauge_nse_summary.csv", index=False)
-    elif reference_nse_summary_csv is not None and Path(reference_nse_summary_csv).exists():
-        nse_summary = pd.read_csv(reference_nse_summary_csv)
-        nse_summary.to_csv(out_dir / "stream_gauge_nse_summary.csv", index=False)
+        ecdf_df = build_stream_gauge_nse_ecdf_quantiles(gm_df, nse_df)
+        ecdf_df.to_csv(out_dir / "stream_gauge_nse_ecdf_quantiles.csv", index=False)
+    else:
+        if reference_nse_summary_csv is not None and Path(reference_nse_summary_csv).exists():
+            nse_summary = pd.read_csv(reference_nse_summary_csv)
+            nse_summary.to_csv(out_dir / "stream_gauge_nse_summary.csv", index=False)
+        if reference_nse_ecdf_csv is not None and Path(reference_nse_ecdf_csv).exists():
+            pd.read_csv(reference_nse_ecdf_csv).to_csv(out_dir / "stream_gauge_nse_ecdf_quantiles.csv", index=False)
+
+    if gm_df is not None:
+        build_stream_gauge_precision_iqr(gm_df).to_csv(out_dir / "stream_gauge_precision_iqr.csv", index=False)
+    elif reference_precision_iqr_csv is not None and Path(reference_precision_iqr_csv).exists():
+        pd.read_csv(reference_precision_iqr_csv).to_csv(out_dir / "stream_gauge_precision_iqr.csv", index=False)
 
     t2_df = build_table2_gauge_vs_catalogs(
         df_pr,

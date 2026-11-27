@@ -38,8 +38,8 @@ This repository quantifies the global subnational coverage gap in official **Com
 
 To respect upstream licensing and third-party redistribution restrictions while guaranteeing full scientific transparency, this repository implements a clean two-tier reproducibility workflow:
 
-1. **Tier 1 — Full Manuscript Reproduction from Zenodo (~2.6 min, CPU-only, 28.1 MB archive):**
-   Download the derived, non-raw Zenodo archive (event catalogs, Admin-1 daily exceedance matrices, discrete `uint8` return-period cubes, de-identified `N = 400` validation labels, and reference summary CSVs) and deterministically recompute every benchmark metric, exact McNemar test, sensitivity audit, manuscript table, and all 13 publication PNG figures (Figures 1–4, Extended Data Figures 1–5). *(Because raw GRDC/USGS/Caravan gauge hydrographs cannot be redistributed, Tier-1 passes through `stream_gauge_nse_summary.csv` and the gauge-side columns of `table2_gauge_vs_catalogs.csv` while recomputing all catalog-side columns dynamically; see [docs/REPRODUCIBILITY.md](docs/REPRODUCIBILITY.md).)*
+1. **Tier 1 — Full Manuscript Reproduction from Zenodo (~3.5 min, CPU-only, ~28 MB archive):**
+   Download the derived, non-raw Zenodo archive (event catalogs, Admin-1 daily exceedance matrices, discrete `uint8` return-period cubes, de-identified `N = 400` validation labels, and reference summary CSVs) and deterministically recompute every benchmark metric, exact McNemar test, sensitivity audit, manuscript table, and all 11 single-composite publication figures in vector PDF, vector SVG, and 300-DPI PNG (Figures 1–5, Extended Data Figures 1–5, Supplementary Figure 1). *(Because raw GRDC/USGS/Caravan gauge hydrographs cannot be redistributed, Tier-1 passes through anonymized `stream_gauge_nse_summary.csv`, `stream_gauge_nse_ecdf_quantiles.csv`, `stream_gauge_precision_iqr.csv`, and the gauge-side columns of `table2_gauge_vs_catalogs.csv` while recomputing all catalog-side columns dynamically; see [docs/REPRODUCIBILITY.md](docs/REPRODUCIBILITY.md).)*
 2. **Tier 2 — Full Upstream Extraction & Ingestion (Reference Pipeline):**
    Portable, parameterized modules under `src/cap_alerting_coverage/ingestion/` and `src/cap_alerting_coverage/pipeline/` document and execute extraction from raw upstream sources (CAP XML/JSON feeds, IDMC GIDD API, IFRC Montandon STAC, Groundsource v2, GADM v4.1, DHM, FFM, GloFAS v5, and GEOGLOWS v2) with zero hardcoded credentials or environment-specific paths.
 
@@ -122,8 +122,10 @@ cap-alerting-coverage/
 ├── src/cap_alerting_coverage/
 │   ├── config.py                   # Constants, cohorts, thresholds, and portable path resolution
 │   ├── scoring.py                  # Exact benchmark scoring, PR curves, Pareto front, lead sweeps, audits
-│   ├── manuscript_outputs.py       # Tables 1–2, ED Tables 1 & 3–6, exact McNemar tests, 13 PNG figures
-│   ├── gauge_verification.py       # Stream-gauge NSE benchmark & Table 2 compilation
+│   ├── manuscript_outputs.py       # Manuscript & Extended Data tables, exact McNemar tests, figure orchestration
+│   ├── figure_style.py             # Shared Nature typography, colorblind-safe palette, Robinson CRS & PDF/SVG/PNG export
+│   ├── figure_fleet.py             # All 11 single-composite publication figures (Figs. 1–5, ED Figs. 1–5, Supp. Fig. 1)
+│   ├── gauge_verification.py       # Stream-gauge NSE/ECDF/IQR summaries & Extended Data Table 5 compilation
 │   ├── validation_audit.py         # Deterministic de-identified N=400 validation tabulation
 │   ├── keywords.py                 # Multilingual flood/storm regex classifiers & OASIS score64
 │   ├── clustering.py               # Episode collapsing, population waterfall, GID_1 clustering
