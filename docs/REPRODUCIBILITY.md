@@ -32,7 +32,7 @@ pip install -e ".[dev,tier2]"
 
 ### Step 1: Obtain and Verify the Zenodo Archive
 
-Download the companion archive (`10.5281/zenodo.23805977` — *placeholder DOI; finalized upon archive publication*) or point to an unpacked local mirror:
+Download the companion archive (`10.5281/zenodo.24583418` — *pre-reserved archive DOI; unpublished draft pending final release*) or point to an unpacked local mirror:
 
 ```bash
 export CAP_GAP_ZENODO_DIR=/path/to/zenodo_archive

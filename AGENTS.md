@@ -113,7 +113,7 @@ This document is written for autonomous coding and verification agents. For huma
 * **Edge case:** GADM v4.1 assigns `gid_1 == "?"` to one unnamed unit in `UKR` (`22` Catalog B events, `2` CAP daily rows, `1,843` FFM rows, `0` Catalog A events); retain verbatim for exact index alignment.
 
 ### 3.3 `03_summary_results/` & `04_validation_deidentified/`
-* `SHA256SUMS.txt` indexes `50` uploadable files (`LICENSE.txt`, `zenodo.json`, `DATA_DICTIONARY.md`, plus `01_`–`04_`).
+* `SHA256SUMS.txt` indexes `51` uploadable files (`LICENSE.txt`, `zenodo.json`, `DATA_DICTIONARY.md`, `Supplementary_Data_1_Global_Alerting_Authorities_Audit_185_Jurisdictions.csv`, plus `01_`–`04_`).
 * `03_summary_results/` contains the 16 `PARITY_TABLES` CSVs plus 3 static upstream audit artifacts (`catalog_a_subnational_resolution_by_country.csv`, `montandon_nonhuman_unit_audit.csv`, `montandon_and_demographics_audit_summary.json`).
 * `04_validation_deidentified/validation_n400_deidentified.csv`: exactly 400 rows × 30 strictly boolean/categorical/integer columns defined in `schemas.DEIDENTIFIED_VALIDATION_COLUMNS`. Zero raw CAP text, URLs, emails, XML tags, UUIDs, exact dates, or reviewer notes; any non-numeric/non-boolean cell `> 64` characters triggers `ValueError`.
 

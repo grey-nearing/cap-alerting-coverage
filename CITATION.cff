@@ -3,10 +3,14 @@ message: "If you use this software or the associated benchmark archive, please c
 type: software
 title: "Global flood models can close nearly two-thirds of the warning gap: Reproducible CAP & Global Flood Forecast Benchmark"
 version: 1.0.0
-date-released: "2026-11-26"
+date-released: "2026-11-27"
 license: Apache-2.0
 repository-code: "https://github.com/grey-nearing/cap-alerting-coverage"
 url: "https://github.com/grey-nearing/cap-alerting-coverage"
+identifiers:
+  - type: doi
+    value: "10.5281/zenodo.24583418"
+    description: "Companion Zenodo benchmark dataset and reproduction archive (pre-reserved DOI)"
 keywords:
   - flood forecasting
   - early warning systems

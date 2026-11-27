@@ -12,7 +12,7 @@ import requests
 from cap_alerting_coverage.config import DEFAULT_ZENODO_RECORD_ID
 
 ZENODO_API_URL = "https://zenodo.org/api/records/{record_id}"
-PLACEHOLDER_ZENODO_RECORD_ID = "23805977"
+PLACEHOLDER_ZENODO_RECORD_ID = "24583418"
 
 EXPECTED_ZENODO_SUBDIRS: tuple[str, ...] = (
     "01_event_catalogs",

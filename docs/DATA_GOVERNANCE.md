@@ -12,7 +12,7 @@ This repository and its companion Zenodo benchmark archive adhere to strict upst
 | Author-curated static reference tables & keyword filters | `data_inputs/Supplementary_Data_1_*.csv`, `unified_multilingual_keyword_filters.csv`, `annex_*.txt` | **CC-BY-4.0** ([data_inputs/LICENSE](../data_inputs/LICENSE)) |
 | Country map boundaries (`1:110m`) | `data_inputs/ne_110m_admin_0_countries.geojson` (Natural Earth) | **Public Domain** |
 | Impact chain schematic | `figures/Figure_5_early_warning_impact_chain.svg` | **CC-BY-4.0** *(adapted from Lindell & Perry 2012 PADM)* |
-| Derived event catalogs, Admin-1 exceedance matrices, `uint8` tier cubes, de-identified `N=400` audit labels, and summary CSVs | Companion Zenodo archive (`10.5281/zenodo.23805977` — *placeholder DOI; finalized upon archive publication*) | **CC-BY-4.0** *(subject to upstream terms carve-out below)* |
+| Derived event catalogs, Admin-1 exceedance matrices, `uint8` tier cubes, de-identified `N=400` audit labels, `Supplementary_Data_1`, and summary CSVs | Companion Zenodo archive (`10.5281/zenodo.24583418` — *pre-reserved archive DOI; unpublished draft pending final release*) | **CC-BY-4.0** *(subject to upstream terms carve-out below)* |
 
 ---
 

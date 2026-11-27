@@ -9,7 +9,7 @@ Reproducible analysis code, benchmark verification suite, and figure/table gener
 >
 > Justin Ginnetti, Juliet Rothenberg, Shmulik Fronman, Michelle Ng, Oleg Zlydenko, Martin Gauch, Daniel Klotz, Patrick Ebel, Asher Metzger, Hadas Fester, Avishag Shapira, Dem Gerolemou, Assaf Shmuel, Ido Zemach, Rotem Mayo, Roy Nadler, Yonatan Nakar, Assaf Mauda, Matheus Vervloet, Karan Ruparell, Frederik Kratzert, Ben Feinstein, Deborah Cohen, Aviya Goldstein, Gila Loike, Dai Yamazaki, Lisie Lillianfeld, Emily Reinstein, Adam Boulanger, and Grey Nearing.
 
-Companion Zenodo derived benchmark archive: `10.5281/zenodo.23805977` *(placeholder DOI; finalized upon archive publication)*.
+Companion Zenodo derived benchmark archive: `10.5281/zenodo.24583418` *(pre-reserved archive DOI; unpublished draft pending final release)*.
 
 ---
 
