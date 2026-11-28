@@ -147,6 +147,12 @@ def test_synthetic_tier1_pipeline_and_cli(tmp_path: Path, monkeypatch: pytest.Mo
             assert r_p["tp_ep"] >= r_o["tp_ep"] >= r_b["tp_ep"]
             if r_p["n_episodes"] > 0:
                 assert r_p["precision_pct"] >= r_o["precision_pct"] >= r_b["precision_pct"]
+        # Hybrid FFM-window sensitivity monotonicity: Uniform 7d >= Primary 1d >= FFMOnset [-1d,0d]
+        hyb_u = sub_cat[sub_cat["variant"] == "CAP_Perm_U_DHM_Oper_U_FFM050__Uniform_[start-7d,end]"].iloc[0]
+        hyb_p = sub_cat[sub_cat["variant"] == "CAP_Perm_U_DHM_Oper_U_FFM050__Primary_FFM[start-1d,end]"].iloc[0]
+        hyb_o = sub_cat[sub_cat["variant"] == "CAP_Perm_U_DHM_Oper_U_FFM050__FFMOnset_[start-1d,start]"].iloc[0]
+        assert hyb_u["tp_ev"] >= hyb_p["tp_ev"] >= hyb_o["tp_ev"]
+        assert hyb_u["tp_ep"] >= hyb_p["tp_ep"] >= hyb_o["tp_ep"]
 
     # Verify country-level Wilcoxon & country-clustered bootstrap inference table
     cl_path = results_dir / "country_clustered_inference.csv"

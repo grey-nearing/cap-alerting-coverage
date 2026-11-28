@@ -1,13 +1,13 @@
 # Reproducibility Guide
 
-This guide documents how to reproduce every number, statistical test, table, and figure in *"Global flood models can close nearly two-thirds of the warning gap"* under **Tier 1** (from the companion Zenodo derived benchmark archive) and how to reconstruct derived intermediate datasets from raw upstream sources under **Tier 2**.
+This guide documents how to reproduce every number, statistical test, table, and figure in *"Global forecasts can close most of the flood warning gap"* under **Tier 1** (from the companion Zenodo derived benchmark archive) and how to reconstruct derived intermediate datasets from raw upstream sources under **Tier 2**.
 
 ---
 
 ## Environment Requirements
 
 * **Python:** 3.10, 3.11, 3.12, or 3.13 (tested across all four versions in CI)
-* **Tier 1 Hardware:** Any standard laptop or workstation (4+ GB RAM, CPU-only). The staged Zenodo archive is **28.1 MB** (`50` uploadable files verified in `SHA256SUMS.txt`, plus `SHA256SUMS.txt` itself and an optional staging helper `UPLOAD_INSTRUCTIONS.md` on disk), and full Tier-1 scoring, sensitivity audits, all summary tables, and all 13 300-DPI publication figures complete in **~2.6 minutes** (`~137 s` scoring/tables + `~21 s` figure rendering).
+* **Tier 1 Hardware:** Any standard laptop or workstation (4+ GB RAM, CPU-only). The staged Zenodo archive is **~28 MB** (`55` uploadable files verified in `SHA256SUMS.txt`, plus `SHA256SUMS.txt` itself and an optional staging helper `UPLOAD_INSTRUCTIONS.md` on disk), and full Tier-1 scoring, sensitivity audits, all summary tables, and all 11 single-composite publication figures (PDF, SVG, and 300-DPI PNG) run deterministically on CPU.
 * **Tier 2 Hardware:** Multi-core Linux workstation with 32+ GB RAM and high-bandwidth object-storage access (for scanning global Zarr/NetCDF/Parquet archives of DHM, FFM, GloFAS v5, GEOGLOWS v2, GADM v4.1, and CAP XML/JSON streams).
 
 ### Installation
@@ -40,15 +40,15 @@ export CAP_GAP_ZENODO_DIR=/path/to/zenodo_archive
 # Optional download via Zenodo REST API once the record is published:
 cap-gap fetch-zenodo --dest-dir "$CAP_GAP_ZENODO_DIR" --record-id <PUBLISHED_RECORD_ID>
 
-# Verify every file against SHA256SUMS.txt (50 checksummed files):
+# Verify every file against SHA256SUMS.txt (55 checksummed files):
 cap-gap verify-zenodo --zenodo-dir "$CAP_GAP_ZENODO_DIR"
 ```
 
-Expected Zenodo directory layout (`50` uploadable checksummed files + `SHA256SUMS.txt`, `28.1 MB` total):
+Expected Zenodo directory layout (`55` uploadable checksummed files + `SHA256SUMS.txt`, `~28 MB` total):
 
 ```text
 zenodo_archive/
-├── SHA256SUMS.txt                 # 50-file SHA-256 manifest
+├── SHA256SUMS.txt                 # 55-file SHA-256 manifest
 ├── LICENSE.txt                    # CC-BY-4.0 + upstream terms carve-out & attributions
 ├── zenodo.json                    # Zenodo deposit metadata
 ├── DATA_DICTIONARY.md             # Column-level schema reference

@@ -1,11 +1,11 @@
-# Global Flood Models Can Close Nearly Two-Thirds of the Warning Gap
+# Global Forecasts Can Close Most of the Flood Warning Gap
 
 [![CI](https://github.com/grey-nearing/cap-alerting-coverage/actions/workflows/ci.yml/badge.svg)](https://github.com/grey-nearing/cap-alerting-coverage/actions/workflows/ci.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
 Reproducible analysis code, benchmark verification suite, and figure/table generation pipeline accompanying the manuscript:
 
-> **Global flood models can close nearly two-thirds of the warning gap**
+> **Global forecasts can close most of the flood warning gap**
 >
 > Justin Ginnetti, Juliet Rothenberg, Shmulik Fronman, Michelle Ng, Oleg Zlydenko, Martin Gauch, Daniel Klotz, Patrick Ebel, Asher Metzger, Hadas Fester, Avishag Shapira, Dem Gerolemou, Assaf Shmuel, Ido Zemach, Rotem Mayo, Roy Nadler, Yonatan Nakar, Assaf Mauda, Matheus Vervloet, Karan Ruparell, Frederik Kratzert, Ben Feinstein, Deborah Cohen, Aviya Goldstein, Gila Loike, Dai Yamazaki, Lisie Lillianfeld, Emily Reinstein, Adam Boulanger, and Grey Nearing.
 
@@ -24,15 +24,15 @@ This repository quantifies the global subnational coverage gap in official **Com
   * **Catalog A (Impact-verified disasters, `N = 5,894` events in 150 countries; `8,908` in 185 audited jurisdictions, `8,911` across all territories):** IDMC GIDD + IFRC Montandon (EM-DAT, GDACS, IFRC GO) deduplicated per GADM Admin-1 unit and 7-day window.
   * **Catalog B (Expanded media-verified benchmark, `N = 27,127` events in 150 countries; `38,590` in 185 audited jurisdictions, `38,975` across all territories):** Catalog A augmented with strictly nested Groundsource v2 flood episodes (`±7d` merge within exact GADM Admin-1 units).
 
-### Key Findings (150 Evaluated Jurisdictions, 2021–2025, 0–7 Day Window)
+### Key Findings (150 Evaluated Jurisdictions, 2021–2025; CAP & River `[−7 d, end]`, 0–24 h FFM `[−1 d, end]`)
 
 | System | Catalog A Event Recall (`N=5,894`) | Catalog A Pop. Recall (`52.66M`) | Catalog A Gap Closed | Catalog B Event Recall (`N=27,127`) | Catalog B Gap Closed |
 |---|---:|---:|---:|---:|---:|
 | **Official CAP (Broad Flood-and-Storm)** | `38.6%` (`2,277`) | `59.4%` | — | `45.6%` (`12,371`) | — |
 | **Official CAP (Explicit Flood-Coded)** | `7.2%` (`423`) | `28.9%` | — | `10.7%` (`2,895`) | — |
 | **CAP ∪ Google DHM (0–7d, Q2yr)** | `60.8%` (`3,584`) | `84.6%` | `36.1%` | `62.4%` (`16,927`) | `30.9%` |
-| **CAP ∪ Google FFM (0–24h, τ=0.50)** | `70.7%` (`4,168`) | `81.9%` | `52.3%` | `80.4%` (`21,823`) | `64.1%` |
-| **CAP ∪ DHM (0–7d) ∪ FFM (0–24h) [Hybrid Full]** | **`78.7%`** (`4,639`) | **`90.0%`** | **`65.3%`** | **`85.2%`** (`23,122`) | **`72.9%`** |
+| **CAP ∪ Google FFM (0–24h, τ=0.50)** | `67.3%` (`3,964`) | `80.1%` | `46.6%` | `77.5%` (`21,034`) | `58.7%` |
+| **CAP ∪ DHM (0–7d) ∪ FFM (0–24h) [Hybrid Full]** | **`76.5%`** (`4,506`) | **`89.4%`** | **`61.6%`** | **`83.2%`** (`22,576`) | **`69.2%`** |
 
 ### Two-Tier Reproducibility Architecture
 

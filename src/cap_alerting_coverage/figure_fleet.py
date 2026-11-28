@@ -704,10 +704,10 @@ def _draw_timeline_panel(ax: plt.Axes) -> None:
     ax.text(
         -2.0,
         4.26,
-        "Matching window (7 days before onset through flood end)",
+        "CAP & river matching window (7 days before onset through flood end)",
         ha="center",
         va="bottom",
-        fontsize=6.8,
+        fontsize=6.6,
         fontweight="bold",
         color=PALETTE["ink"],
     )
@@ -721,7 +721,16 @@ def _draw_timeline_panel(ax: plt.Axes) -> None:
             mutation_scale=1.0,
         )
     )
-    ax.text(-3.5, 3.84, "Pre-onset (7 days)", ha="center", va="bottom", fontsize=6.4, fontweight="bold", color="#1B5E8A")
+    ax.text(
+        -3.5,
+        3.84,
+        "Pre-onset (7 d; 1 d for FFM)",
+        ha="center",
+        va="bottom",
+        fontsize=6.3,
+        fontweight="bold",
+        color="#1B5E8A",
+    )
     ax.text(1.5, 3.84, "Active flood", ha="center", va="bottom", fontsize=6.4, fontweight="bold", color="#9A3412")
 
     y1 = 3.02
@@ -788,13 +797,35 @@ def _draw_timeline_panel(ax: plt.Axes) -> None:
 
     y4 = 0.16
     ax.axhline(y4, color="#E2E8F0", lw=0.6, zorder=0)
+    ax.add_patch(
+        Rectangle(
+            (-1.0, y4 - 0.18),
+            4.0,
+            0.44,
+            facecolor="#EFE6F7",
+            edgecolor=PALETTE["dhm_ffm"],
+            linestyle=":",
+            linewidth=0.85,
+            alpha=0.85,
+            zorder=1,
+        )
+    )
     xs_ffm = np.linspace(-7.4, 4.6, 180)
-    ys_ffm = y4 - 0.12 + 0.34 * np.exp(-0.5 * ((xs_ffm + 0.65) / 0.52) ** 2)
+    ys_ffm = y4 - 0.12 + 0.34 * np.exp(-0.5 * ((xs_ffm + 0.55) / 0.42) ** 2)
     tau_lvl = y4 + 0.08
     ax.plot(xs_ffm, ys_ffm, color=PALETTE["dhm_ffm"], lw=1.35, zorder=3)
     ax.plot([-7.4, 4.6], [tau_lvl, tau_lvl], color=PALETTE["dhm_ffm"], ls="--", lw=0.8, alpha=0.85, zorder=2)
-    ax.fill_between(xs_ffm, tau_lvl, ys_ffm, where=(ys_ffm >= tau_lvl), color="#D8C2EB", alpha=0.65, zorder=2)
-    ax.text(-0.65, y4 + 0.25, "Flash-flood probability ≥ 0.50 (0–24 h)", ha="center", va="bottom", fontsize=6.2, fontweight="bold", color="#522B78")
+    ax.fill_between(xs_ffm, tau_lvl, ys_ffm, where=(ys_ffm >= tau_lvl), color="#D8C2EB", alpha=0.75, zorder=2)
+    ax.text(
+        0.55,
+        y4 + 0.30,
+        "FFM window (−1 d to end); prob. ≥ 0.50",
+        ha="center",
+        va="bottom",
+        fontsize=6.0,
+        fontweight="bold",
+        color="#522B78",
+    )
 
     ax.set_yticks([y1, y2, y3, y4])
     ax.set_yticklabels(

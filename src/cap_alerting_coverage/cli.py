@@ -32,6 +32,7 @@ PARITY_TABLES: tuple[str, ...] = (
     "ed_table6a_annual_onboarding.csv",
     "ed_table6b_late_onboarders.csv",
     "country_coverage_and_gains_150.csv",
+    "country_clustered_inference.csv",
     "pr_curves_summary.csv",
     "cap_continuous_pr.csv",
     "dhm_ffm_2d_grid.csv",

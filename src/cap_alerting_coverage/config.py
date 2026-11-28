@@ -35,6 +35,8 @@ GEOGLOWS_OPER_RP_TIERS: tuple[tuple[int, float], ...] = (
     (8, 100.0),
 )
 FFM_THRESHOLDS: tuple[float, ...] = (0.95, 0.90, 0.80, 0.70, 0.60, 0.50, 0.40, 0.30, 0.20, 0.10, 0.05)
+# Maximum pre-onset matching lead for Google FFM (0-24h forward forecast horizon; outlook = 86,400 s).
+FFM_MAX_PRE_DAYS: int = 1
 CAP_SEVERITIES: tuple[tuple[int, str], ...] = (
     (4, "Extreme"),
     (3, ">=Severe"),

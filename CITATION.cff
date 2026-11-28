@@ -1,9 +1,9 @@
 cff-version: 1.2.0
 message: "If you use this software or the associated benchmark archive, please cite it using the metadata below."
 type: software
-title: "Global flood models can close nearly two-thirds of the warning gap: Reproducible CAP & Global Flood Forecast Benchmark"
+title: "Global forecasts can close most of the flood warning gap: Reproducible CAP & Global Flood Forecast Benchmark"
 version: 1.0.0
-date-released: "2026-11-27"
+date-released: "2026-11-28"
 license: Apache-2.0
 repository-code: "https://github.com/grey-nearing/cap-alerting-coverage"
 url: "https://github.com/grey-nearing/cap-alerting-coverage"

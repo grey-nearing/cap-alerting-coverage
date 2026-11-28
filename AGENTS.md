@@ -117,8 +117,8 @@ This document is written for autonomous coding and verification agents. For huma
 * **Edge case:** GADM v4.1 assigns `gid_1 == "?"` to one unnamed unit in `UKR` (`22` Catalog B events, `2` CAP daily rows, `1,843` FFM rows, `0` Catalog A events); retain verbatim for exact index alignment.
 
 ### 3.3 `03_summary_results/` & `04_validation_deidentified/`
-* `SHA256SUMS.txt` indexes `54` uploadable files (`LICENSE.txt`, `zenodo.json`, `DATA_DICTIONARY.md`, `Supplementary_Data_1_Global_Alerting_Authorities_Audit_185_Jurisdictions.csv`, plus `01_`–`04_`).
-* `03_summary_results/` contains the 19 `PARITY_TABLES` CSVs (including `fine_ffm_pr_curves.csv`, `stream_gauge_nse_ecdf_quantiles.csv`, and `stream_gauge_precision_iqr.csv`) plus 3 static upstream audit artifacts (`catalog_a_subnational_resolution_by_country.csv`, `montandon_nonhuman_unit_audit.csv`, `montandon_and_demographics_audit_summary.json`).
+* `SHA256SUMS.txt` indexes `55` uploadable files (`LICENSE.txt`, `zenodo.json`, `DATA_DICTIONARY.md`, `Supplementary_Data_1_Global_Alerting_Authorities_Audit_185_Jurisdictions.csv`, plus `01_`–`04_`).
+* `03_summary_results/` contains the 20 `PARITY_TABLES` CSVs (including `country_clustered_inference.csv`, `fine_ffm_pr_curves.csv`, `stream_gauge_nse_ecdf_quantiles.csv`, and `stream_gauge_precision_iqr.csv`) plus 3 static upstream audit artifacts (`catalog_a_subnational_resolution_by_country.csv`, `montandon_nonhuman_unit_audit.csv`, `montandon_and_demographics_audit_summary.json`).
 * `04_validation_deidentified/validation_n400_deidentified.csv`: exactly 400 rows × 30 strictly boolean/categorical/integer columns defined in `schemas.DEIDENTIFIED_VALIDATION_COLUMNS`. Zero raw CAP text, URLs, emails, XML tags, UUIDs, exact dates, or reviewer notes; any non-numeric/non-boolean cell `> 64` characters triggers `ValueError`.
 
 ---
@@ -154,7 +154,7 @@ cap-gap verify-parity \
 ## 5. Mathematical Invariants (Do Not Break)
 
 1. **Population Waterfall Default:** `compute_waterfall_population` defaults to `pop_rule="priority_fallback"` (`num_affected > 0` → `displacements > 0` → `num_killed`). Keep `pop_rule="max"` (pure `max(aff, disp)`) and `pop_rule="max_with_killed_fallback"` strictly opt-in for sensitivity audits.
-2. **Valid-Date Forecast Alignment:** Multi-lead forecasts issued at day `t_issue` with lead `L` are ALWAYS placed on valid day `t_valid = t_issue + L`. Never score on issue date.
+2. **Valid-Date Forecast Alignment & Horizon-Consistent FFM Window:** Multi-lead forecasts issued at day `t_issue` with lead `L` are ALWAYS placed on valid day `t_valid = t_issue + L`. Never score on issue date. Official CAP and 0–7 day river forecasts use `[start - 7 d, end]`, while 0–24 h Google FFM alerts use `[start - FFM_MAX_PRE_DAYS, end]` (`FFM_MAX_PRE_DAYS = 1`) in all standalone and composite hybrid evaluations (`score_composite_alert_matrices`).
 3. **Warning Episode Collapsing:** Default `max_gap_days=2` (consecutive active warning days with gap `<= 3` days merge into one episode).
 4. **Strict Catalog Nesting:** Every Catalog A event appears in Catalog B with identical `event_id`, `gid_1`, `start_date`, `end_date`, and `waterfall_pop`; unmatched Groundsource episodes have `waterfall_pop == 0.0`.
 5. **Exact McNemar Test:** Always use two-sided exact binomial test (`scipy.stats.binomtest(b, b + c, 0.5)`), never asymptotic chi-squared approximations for small discordant counts.

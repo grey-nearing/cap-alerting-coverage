@@ -11,7 +11,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from cap_alerting_coverage.config import D_TOTAL, DATES, ProjectPaths, date_to_idx
+from cap_alerting_coverage.config import D_TOTAL, DATES, FFM_MAX_PRE_DAYS, ProjectPaths, date_to_idx
 from cap_alerting_coverage.figure_fleet import (
     render_ed_fig1,
     render_ed_fig2,
@@ -102,18 +102,22 @@ def build_country_clustered_inference_table(
     w_glofas = make_w_matrix(data, "GloFAS_v5_0d", 2, 7, n_g)
     w_geoglows = make_w_matrix(data, "GeoGLOWS_Retro_0d", 2, 7, n_g)
 
-    candidates: list[tuple[str, str, np.ndarray]] = [
-        ("CAP_Perm_U_GloFAS_v5_0d", "RP=2", w_cap | w_glofas),
-        ("CAP_Perm_U_GeoGLOWS_Retro_0d", "RP=2", w_cap | w_geoglows),
-        ("CAP_Perm_U_DHM_0d", "RP=2", w_cap | w_dhm_0d),
-        ("CAP_Perm_U_DHM_Oper", "RP=2", w_cap | w_dhm_oper),
-        ("CAP_Perm_U_FFM", "tau=0.50", w_cap | w_ffm),
-        ("CAP_Perm_U_DHM_Oper_U_FFM050", "RP=2", w_cap | w_dhm_oper | w_ffm),
+    # Pairs of (system_name, thr_label, non_ffm_matrix_7d, include_ffm_1d)
+    candidates: list[tuple[str, str, np.ndarray, bool]] = [
+        ("CAP_Perm_U_GloFAS_v5_0d", "RP=2", w_cap | w_glofas, False),
+        ("CAP_Perm_U_GeoGLOWS_Retro_0d", "RP=2", w_cap | w_geoglows, False),
+        ("CAP_Perm_U_DHM_0d", "RP=2", w_cap | w_dhm_0d, False),
+        ("CAP_Perm_U_DHM_Oper", "RP=2", w_cap | w_dhm_oper, False),
+        ("CAP_Perm_U_FFM", "tau=0.50", w_cap, True),
+        ("CAP_Perm_U_DHM_Oper_U_FFM050", "RP=2", w_cap | w_dhm_oper, True),
     ]
 
     rows: list[dict[str, Any]] = []
     for cat_k, cat_df in (("Without_GS", data["cat_without_gs"]), ("With_GS", data["cat_with_gs"])):
         v_mask, det_cap = build_event_detection_flags(cat_df, w_cap, gid_to_idx, "2021-01-01", "2025-12-31", 7)
+        _, det_ffm = build_event_detection_flags(
+            cat_df, w_ffm, gid_to_idx, "2021-01-01", "2025-12-31", FFM_MAX_PRE_DAYS
+        )
         ev = cat_df[v_mask].copy()
         in_eval = ev["country_iso3"].isin(eval_150).to_numpy()
         if not np.any(in_eval):
@@ -122,8 +126,9 @@ def build_country_clustered_inference_table(
         pop_w = ev.loc[in_eval, "waterfall_pop"].to_numpy(dtype=np.float64)
         base_det = det_cap[in_eval]
 
-        for sys_name, thr_lbl, w_cand in candidates:
-            _, det_cand = build_event_detection_flags(cat_df, w_cand, gid_to_idx, "2021-01-01", "2025-12-31", 7)
+        for sys_name, thr_lbl, w_other, use_ffm in candidates:
+            _, det_other = build_event_detection_flags(cat_df, w_other, gid_to_idx, "2021-01-01", "2025-12-31", 7)
+            det_cand = (det_other | det_ffm) if use_ffm else det_other
             inf = country_clustered_coverage_inference(
                 country_ids=countries,
                 baseline=base_det,
@@ -356,19 +361,22 @@ def generate_manuscript_tables_and_figures(
     # 4. Country-level coverage, hybrid gains, and post-onboarding tables (Catalog A & Catalog B)
     w_cap7 = make_w_matrix(data, "CAP_Perm", 1, 7, n_g)
     w_dhm7 = make_w_matrix(data, "DHM_Oper", 2, 7, n_g)
-    w_ffm7 = make_w_matrix(data, "FFM", 0.50, 7, n_g)
-    w_mod7 = w_dhm7 | w_ffm7
-    w_hyb7 = w_cap7 | w_mod7
+    w_ffm = make_w_matrix(data, "FFM", 0.50, 7, n_g)
+    w_hyb_daily = w_cap7 | w_dhm7 | w_ffm
 
     cat_a = data["cat_without_gs"]
     cat_b = data["cat_with_gs"]
     va_cap, da_cap = build_event_detection_flags(cat_a, w_cap7, gid_to_idx, "2021-01-01", "2025-12-31", 7)
-    _, da_mod = build_event_detection_flags(cat_a, w_mod7, gid_to_idx, "2021-01-01", "2025-12-31", 7)
-    _, da_hyb = build_event_detection_flags(cat_a, w_hyb7, gid_to_idx, "2021-01-01", "2025-12-31", 7)
+    _, da_dhm = build_event_detection_flags(cat_a, w_dhm7, gid_to_idx, "2021-01-01", "2025-12-31", 7)
+    _, da_ffm = build_event_detection_flags(cat_a, w_ffm, gid_to_idx, "2021-01-01", "2025-12-31", FFM_MAX_PRE_DAYS)
+    da_mod = da_dhm | da_ffm
+    da_hyb = da_cap | da_mod
 
     vb_cap, db_cap = build_event_detection_flags(cat_b, w_cap7, gid_to_idx, "2021-01-01", "2025-12-31", 7)
-    _, db_mod = build_event_detection_flags(cat_b, w_mod7, gid_to_idx, "2021-01-01", "2025-12-31", 7)
-    _, db_hyb = build_event_detection_flags(cat_b, w_hyb7, gid_to_idx, "2021-01-01", "2025-12-31", 7)
+    _, db_dhm = build_event_detection_flags(cat_b, w_dhm7, gid_to_idx, "2021-01-01", "2025-12-31", 7)
+    _, db_ffm = build_event_detection_flags(cat_b, w_ffm, gid_to_idx, "2021-01-01", "2025-12-31", FFM_MAX_PRE_DAYS)
+    db_mod = db_dhm | db_ffm
+    db_hyb = db_cap | db_mod
 
     ev_a = cat_a[va_cap].copy()
     ev_a["cov_cap"] = da_cap
@@ -591,11 +599,44 @@ def generate_manuscript_tables_and_figures(
     summary_payload: dict[str, Any] = {
         "n_eval_jurisdictions": len(eval_150),
         "n_cohort_d": len(cohort_d),
+        "ffm_max_pre_days": FFM_MAX_PRE_DAYS,
         "cat_a_eval_events": int(len(ev_a150)),
         "cat_b_eval_events": int(len(ev_b150)),
         "cat_a_eval_pop": float(ev_a150["waterfall_pop"].sum()),
         "cat_b_eval_pop": float(ev_b150["waterfall_pop"].sum()),
     }
+    # Operational alert-volume & Admin-1 alert-day burden summary (2021-2025)
+    t_b0 = date_to_idx("2021-01-01")
+    t_b1 = date_to_idx("2025-12-31")
+    cap_days_yr = w_cap7[:, t_b0 : t_b1 + 1].sum(axis=1) / 5.0
+    hyb_days_yr = w_hyb_daily[:, t_b0 : t_b1 + 1].sum(axis=1) / 5.0
+    eval_gids_a = {gid_to_idx[g] for g in ev_a150["gid_1"].unique() if g in gid_to_idx}
+    eval_gids_b = {gid_to_idx[g] for g in ev_b150["gid_1"].unique() if g in gid_to_idx}
+    burden_info: dict[str, Any] = {}
+    for cat_k, gset in (("Without_GS", eval_gids_a), ("With_GS", eval_gids_b)):
+        sub_t1 = t1_df[(t1_df["catalog"] == cat_k) & (t1_df["benchmark"] == "2021_2025")]
+        r_cap = sub_t1[(sub_t1["system"] == "CAP_Perm") & (sub_t1["thr_label"] == "All")]
+        r_hyb = sub_t1[(sub_t1["system"] == "CAP_Perm_U_DHM_Oper_U_FFM050") & (sub_t1["thr_label"] == "RP=2")]
+        if not r_cap.empty and not r_hyb.empty and gset:
+            idx_arr = np.array(sorted(gset), dtype=np.int32)
+            c_ep, c_tp = int(r_cap["n_episodes"].iloc[0]), int(r_cap["tp_ep"].iloc[0])
+            h_ep, h_tp = int(r_hyb["n_episodes"].iloc[0]), int(r_hyb["tp_ep"].iloc[0])
+            c_unv, h_unv = c_ep - c_tp, h_ep - h_tp
+            burden_info[cat_k] = {
+                "n_flood_prone_gid1": int(len(idx_arr)),
+                "cap_episodes": c_ep,
+                "hybrid_episodes": h_ep,
+                "episode_change_pct": round(100.0 * (h_ep - c_ep) / max(1, c_ep), 2),
+                "cap_unverified_episodes": c_unv,
+                "hybrid_unverified_episodes": h_unv,
+                "unverified_episode_change_pct": round(100.0 * (h_unv - c_unv) / max(1, c_unv), 2),
+                "cap_mean_alert_days_per_yr": round(float(np.mean(cap_days_yr[idx_arr])), 2),
+                "cap_median_alert_days_per_yr": round(float(np.median(cap_days_yr[idx_arr])), 2),
+                "hybrid_mean_alert_days_per_yr": round(float(np.mean(hyb_days_yr[idx_arr])), 2),
+                "hybrid_median_alert_days_per_yr": round(float(np.median(hyb_days_yr[idx_arr])), 2),
+            }
+    if burden_info:
+        summary_payload["alert_burden_2021_2025"] = burden_info
     if not clustered_df.empty:
         hyb_rows = clustered_df[clustered_df["system"] == "CAP_Perm_U_DHM_Oper_U_FFM050"]
         if not hyb_rows.empty:

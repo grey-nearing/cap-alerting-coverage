@@ -15,6 +15,7 @@ from cap_alerting_coverage.config import (
     CAP_SEVERITIES,
     D_TOTAL,
     DATES,
+    FFM_MAX_PRE_DAYS,
     FFM_THRESHOLDS,
     GEOGLOWS_OPER_RP_TIERS,
     LEAD_WINDOWS_DAYS,
@@ -538,6 +539,171 @@ def score_boolean_matrix(
     }
 
 
+def _detect_events_from_flat(
+    flat: np.ndarray,
+    g_idx: np.ndarray,
+    n_g: int,
+    w0: int,
+    win_len: int,
+    cat_slice: dict[str, Any],
+) -> tuple[np.ndarray, np.ndarray]:
+    """Return boolean ``(det, pre_det)`` arrays per event using sorted flat alert indices."""
+    ev_g = cat_slice["ev_g"]
+    n_ev = len(ev_g)
+    if n_ev == 0 or len(flat) == 0:
+        return np.zeros(n_ev, dtype=bool), np.zeros(n_ev, dtype=bool)
+    g_remap = np.full(n_g, -1, dtype=np.int32)
+    g_remap[g_idx] = np.arange(len(g_idx), dtype=np.int32)
+    ev_r = g_remap[ev_g]
+    valid_ev = ev_r >= 0
+    if not np.any(valid_ev):
+        return np.zeros(n_ev, dtype=bool), np.zeros(n_ev, dtype=bool)
+    ev_r_safe = np.where(valid_ev, ev_r, 0).astype(np.int64)
+    row_base = ev_r_safe * win_len
+    key_lo = row_base + (cat_slice["ev_w0"] - w0)
+    key_hi = row_base + (cat_slice["ev_w1"] - w0)
+    key_pre = row_base + (cat_slice["ev_s"] - w0)
+    pos_lo = np.searchsorted(flat, key_lo, side="left")
+    det = valid_ev & (pos_lo < np.searchsorted(flat, key_hi, side="right"))
+    pre_det = valid_ev & (pos_lo < np.searchsorted(flat, key_pre, side="right"))
+    return det, pre_det
+
+
+def score_composite_alert_matrices(
+    w_other: np.ndarray | None,
+    w_ffm: np.ndarray | None,
+    cat_slice_other: dict[str, Any],
+    fcover_other: np.ndarray,
+    cat_slice_ffm: dict[str, Any],
+    fcover_ffm: np.ndarray,
+    g_mask: np.ndarray,
+    max_gap: int = 2,
+) -> dict[str, Any]:
+    """Score standalone FFM or a composite union where CAP/river alerts use ``cat_slice_other``
+    and 0–24 h FFM alerts use the shorter ``cat_slice_ffm`` matching window.
+
+    An event is covered iff either ``w_other`` fires in its ``cat_slice_other`` window or
+    ``w_ffm`` fires in its ``cat_slice_ffm`` window. Episode precision collapses the combined
+    alert stream with ``max_gap`` and credits a day ``(g, d)`` iff
+    ``(w_other[g, d] & fcover_other[g, d]) | (w_ffm[g, d] & fcover_ffm[g, d])``, preserving
+    exact bipartite consistency ``(tp_ev == 0) == (tp_ep == 0)``.
+    """
+    if w_other is None:
+        if w_ffm is None:
+            raise ValueError("At least one of w_other or w_ffm must be provided.")
+        return score_boolean_matrix(w_ffm, cat_slice_ffm, fcover_ffm, g_mask, max_gap=max_gap)
+    if w_ffm is None:
+        return score_boolean_matrix(w_other, cat_slice_other, fcover_other, g_mask, max_gap=max_gap)
+
+    n_ev = cat_slice_other["n_events"]
+    if cat_slice_ffm["n_events"] != n_ev:
+        raise ValueError(f"Catalog slice event mismatch: {n_ev} vs {cat_slice_ffm['n_events']}.")
+
+    w0_o, w1 = cat_slice_other["w_min"], cat_slice_other["b1"]
+    w0_f = cat_slice_ffm["w_min"]
+    w0 = min(w0_o, w0_f)
+    win_len = w1 - w0 + 1
+    n_g = w_other.shape[0]
+
+    g_idx = np.flatnonzero(g_mask)
+    if len(g_idx) == 0:
+        return {
+            "n_events": n_ev,
+            "tp_ev": 0,
+            "tp_pre": 0,
+            "recall_pct": 0.0,
+            "pre_recall_pct": 0.0,
+            "pop_recall_pct": 0.0,
+            "n_warn_days": 0,
+            "n_episodes": 0,
+            "tp_ep": 0,
+            "fp_ep": 0,
+            "precision_pct": np.nan,
+            "f1_pct": np.nan,
+        }
+
+    w_o_win = w_other[g_idx, w0 : w1 + 1]
+    w_f_win = w_ffm[g_idx, w0 : w1 + 1]
+    if w0_o > w0:
+        w_o_win = w_o_win.copy()
+        w_o_win[:, : (w0_o - w0)] = False
+    if w0_f > w0:
+        w_f_win = w_f_win.copy()
+        w_f_win[:, : (w0_f - w0)] = False
+
+    w_u_win = w_o_win | w_f_win
+    flat_u = np.flatnonzero(w_u_win)
+    n_warn_days = len(flat_u)
+    if n_warn_days == 0:
+        return {
+            "n_events": n_ev,
+            "tp_ev": 0,
+            "tp_pre": 0,
+            "recall_pct": 0.0,
+            "pre_recall_pct": 0.0,
+            "pop_recall_pct": 0.0,
+            "n_warn_days": 0,
+            "n_episodes": 0,
+            "tp_ep": 0,
+            "fp_ep": 0,
+            "precision_pct": np.nan,
+            "f1_pct": np.nan,
+        }
+
+    gi_sub, di_rel = np.divmod(flat_u, win_len)
+    gi = g_idx[gi_sub]
+    di = di_rel + w0
+    in_o = w_o_win[gi_sub, di_rel]
+    in_f = w_f_win[gi_sub, di_rel]
+
+    flat_o = flat_u[in_o]
+    flat_f = flat_u[in_f]
+    det_o, pre_o = _detect_events_from_flat(flat_o, g_idx, n_g, w0, win_len, cat_slice_other)
+    det_f, pre_f = _detect_events_from_flat(flat_f, g_idx, n_g, w0, win_len, cat_slice_ffm)
+    det = det_o | det_f
+    pre_det = pre_o | pre_f
+    tp_ev = int(det.sum())
+    tp_pre = int(pre_det.sum())
+    ev_pop = cat_slice_other["ev_pop"]
+    tot_pop = float(ev_pop.sum())
+    pop_rec = (float(ev_pop[det].sum()) / tot_pop * 100.0) if tot_pop > 0 else 0.0
+
+    is_new_ep = np.empty(n_warn_days, dtype=bool)
+    is_new_ep[0] = True
+    is_new_ep[1:] = (gi_sub[1:] != gi_sub[:-1]) | ((di_rel[1:] - di_rel[:-1]) > (max_gap + 1))
+
+    ep_ids = np.cumsum(is_new_ep) - 1
+    n_ep = int(ep_ids[-1]) + 1
+    day_hit = (in_o & fcover_other[gi, di]) | (in_f & fcover_ffm[gi, di])
+    ep_tp = np.zeros(n_ep, dtype=bool)
+    np.logical_or.at(ep_tp, ep_ids, day_hit)
+    tp_ep = int(ep_tp.sum())
+    fp_ep = n_ep - tp_ep
+
+    if (tp_ev == 0) != (tp_ep == 0):
+        raise AssertionError(f"Composite bipartite consistency mismatch: tp_ev={tp_ev}, tp_ep={tp_ep}")
+
+    rec_pct = 100.0 * tp_ev / max(1, n_ev)
+    pre_pct = 100.0 * tp_pre / max(1, n_ev)
+    prec_pct = 100.0 * tp_ep / max(1, n_ep)
+    f1_pct = (2.0 * rec_pct * prec_pct / (rec_pct + prec_pct)) if (rec_pct + prec_pct) > 0 else 0.0
+
+    return {
+        "n_events": n_ev,
+        "tp_ev": tp_ev,
+        "tp_pre": tp_pre,
+        "recall_pct": round(rec_pct, 3),
+        "pre_recall_pct": round(pre_pct, 3),
+        "pop_recall_pct": round(pop_rec, 3),
+        "n_warn_days": n_warn_days,
+        "n_episodes": n_ep,
+        "tp_ep": tp_ep,
+        "fp_ep": fp_ep,
+        "precision_pct": round(prec_pct, 3),
+        "f1_pct": round(f1_pct, 3),
+    }
+
+
 def score_admin0_cap_audit(
     cap0_df: pd.DataFrame,
     cat_df: pd.DataFrame,
@@ -823,12 +989,18 @@ def score_ffm_groundsource_slices(
     }
     slices: dict[tuple[str, str], dict[str, Any]] = {}
     fcovers: dict[tuple[str, str], np.ndarray] = {}
+    slices_ffm: dict[tuple[str, str], dict[str, Any]] = {}
+    fcovers_ffm: dict[tuple[str, str], np.ndarray] = {}
     for cname, cdf in catalogs.items():
         for bname, bstart, bend in BENCHMARKS:
             sl = prepare_catalog_slice(cdf, gid_to_idx, eval_150, bstart, bend, 7)
             fc = build_fcover(n_g, sl)
             slices[(cname, bname)] = sl
             fcovers[(cname, bname)] = fc
+            sl_f = prepare_catalog_slice(cdf, gid_to_idx, eval_150, bstart, bend, FFM_MAX_PRE_DAYS)
+            fc_f = build_fcover(n_g, sl_f)
+            slices_ffm[(cname, bname)] = sl_f
+            fcovers_ffm[(cname, bname)] = fc_f
 
     w_cap_perm_all = make_w_matrix(data, "CAP_Perm", 1, 7, n_g)
     w_cap_perm_cont = [(k, make_w_matrix(data, "CAP_Perm_Cont", k, 7, n_g)) for k in CAP_CONTINUOUS_THRESHOLDS]
@@ -840,9 +1012,24 @@ def score_ffm_groundsource_slices(
     w_f050 = dict(w_ffm_taus)[0.50]
 
     def _score_row(
-        w_mat: np.ndarray, cname: str, bname: str, sys_name: str, thr_label: str, thr_order: int
+        w_other: np.ndarray | None,
+        w_ffm: np.ndarray | None,
+        cname: str,
+        bname: str,
+        sys_name: str,
+        thr_label: str,
+        thr_order: int,
     ) -> dict[str, Any]:
-        res = score_boolean_matrix(w_mat, slices[(cname, bname)], fcovers[(cname, bname)], g_mask, max_gap=2)
+        res = score_composite_alert_matrices(
+            w_other,
+            w_ffm,
+            slices[(cname, bname)],
+            fcovers[(cname, bname)],
+            slices_ffm[(cname, bname)],
+            fcovers_ffm[(cname, bname)],
+            g_mask,
+            max_gap=2,
+        )
         return {
             "n_events": int(res["n_events"]),
             "tp_ev": int(res["tp_ev"]),
@@ -868,25 +1055,25 @@ def score_ffm_groundsource_slices(
     for cname in ("Without_GS", "With_GS", "GS_Media_Only"):
         for bname, _, _ in BENCHMARKS:
             for idx, (k, w_mat) in enumerate(w_cap_perm_cont, start=1):
-                out_rows.append(_score_row(w_mat, cname, bname, "CAP_Perm_Cont", f"CAP_Score64>={k}", idx))
+                out_rows.append(_score_row(w_mat, None, cname, bname, "CAP_Perm_Cont", f"CAP_Score64>={k}", idx))
             for sv, lbl, w_mat in w_cap_perm_sevs:
-                out_rows.append(_score_row(w_mat, cname, bname, "CAP_Perm", lbl, sv))
+                out_rows.append(_score_row(w_mat, None, cname, bname, "CAP_Perm", lbl, sv))
             for idx, (k, w_mat) in enumerate(w_cap_rest_cont, start=1):
-                out_rows.append(_score_row(w_mat, cname, bname, "CAP_Rest_Cont", f"CAP_Score64>={k}", idx))
+                out_rows.append(_score_row(w_mat, None, cname, bname, "CAP_Rest_Cont", f"CAP_Score64>={k}", idx))
             for sv, lbl, w_mat in w_cap_rest_sevs:
-                out_rows.append(_score_row(w_mat, cname, bname, "CAP_Rest", lbl, sv))
+                out_rows.append(_score_row(w_mat, None, cname, bname, "CAP_Rest", lbl, sv))
             for idx, (rp, w_mat) in enumerate(w_dhm_rps, start=1):
-                out_rows.append(_score_row(w_mat, cname, bname, "DHM_Oper", f"RP={rp:g}", idx))
+                out_rows.append(_score_row(w_mat, None, cname, bname, "DHM_Oper", f"RP={rp:g}", idx))
             for idx, (tau, w_mat) in enumerate(w_ffm_taus, start=1):
-                out_rows.append(_score_row(w_mat, cname, bname, "FFM", f"tau={tau:.2f}", idx))
+                out_rows.append(_score_row(None, w_mat, cname, bname, "FFM", f"tau={tau:.2f}", idx))
                 out_rows.append(
-                    _score_row(w_cap_perm_all | w_mat, cname, bname, "CAP_Perm_U_FFM", f"tau={tau:.2f}", idx)
+                    _score_row(w_cap_perm_all, w_mat, cname, bname, "CAP_Perm_U_FFM", f"tau={tau:.2f}", idx)
                 )
             for idx, (rp, w_d) in enumerate(w_dhm_rps, start=1):
-                out_rows.append(_score_row(w_d | w_f050, cname, bname, "DHM_Oper_U_FFM050", f"RP={rp:g}", idx))
+                out_rows.append(_score_row(w_d, w_f050, cname, bname, "DHM_Oper_U_FFM050", f"RP={rp:g}", idx))
                 out_rows.append(
                     _score_row(
-                        w_cap_perm_all | w_d | w_f050, cname, bname, "CAP_Perm_U_DHM_Oper_U_FFM050", f"RP={rp:g}", idx
+                        w_cap_perm_all | w_d, w_f050, cname, bname, "CAP_Perm_U_DHM_Oper_U_FFM050", f"RP={rp:g}", idx
                     )
                 )
 
@@ -903,16 +1090,10 @@ def score_ffm_groundsource_slices(
                     lbl_rp = "RP=off" if rp is None else f"RP={rp:g}"
                     lbl_tau = "tau=off" if tau is None else f"tau={tau:.2f}"
                     lbl = f"{lbl_rp}|{lbl_tau}"
-                    if w_d is None:
-                        assert w_f is not None
-                        w_df = w_f
-                    elif w_f is None:
-                        w_df = w_d
-                    else:
-                        w_df = w_d | w_f
-                    r_df = _score_row(w_df, cname, bname, "DHM_Oper_U_FFM_Grid", lbl, gidx)
+                    r_df = _score_row(w_d, w_f, cname, bname, "DHM_Oper_U_FFM_Grid", lbl, gidx)
                     grid_dhm_ffm.append(r_df)
-                    r_cdf = _score_row(w_cap_perm_all | w_df, cname, bname, "CAP_Perm_U_DHM_Oper_U_FFM_Grid", lbl, gidx)
+                    w_cd = w_cap_perm_all if w_d is None else (w_cap_perm_all | w_d)
+                    r_cdf = _score_row(w_cd, w_f, cname, bname, "CAP_Perm_U_DHM_Oper_U_FFM_Grid", lbl, gidx)
                     grid_cap_dhm_ffm.append(r_cdf)
 
             out_rows.extend(grid_dhm_ffm)
@@ -988,6 +1169,9 @@ def run_full_scoring(
             for lead_n in (7, 15):
                 c_sl = prepare_catalog_slice(cat_df, gid_to_idx, eval_150, b0_s, b1_s, lead_n)
                 fcov = build_fcover(n_g, c_sl)
+                ffm_lead = min(lead_n, FFM_MAX_PRE_DAYS)
+                c_sl_f = prepare_catalog_slice(cat_df, gid_to_idx, eval_150, b0_s, b1_s, ffm_lead)
+                fcov_f = build_fcover(n_g, c_sl_f)
 
                 for cap_k in ("CAP_Perm", "CAP_Rest"):
                     for sev_i, sev_lbl in CAP_SEVERITIES:
@@ -1024,7 +1208,9 @@ def run_full_scoring(
                 w_ffm_map = {tau: make_w_matrix(data, "FFM", tau, lead_n, n_g) for tau in FFM_THRESHOLDS}
                 r_ffm_map = {}
                 for ti, tau in enumerate(FFM_THRESHOLDS):
-                    res = score_boolean_matrix(w_ffm_map[tau], c_sl, fcov, g_mask_150, max_gap=2)
+                    res = score_composite_alert_matrices(
+                        None, w_ffm_map[tau], c_sl, fcov, c_sl_f, fcov_f, g_mask_150, max_gap=2
+                    )
                     r_ffm_map[tau] = res
                     row_f = dict(res)
                     row_f.update(
@@ -1102,7 +1288,9 @@ def run_full_scoring(
                         )
                         full_grid.append(f_only)
                         if d_key == "DHM_Oper":
-                            cf_only = score_boolean_matrix(w_cap_p | w_ffm_map[tau], c_sl, fcov, g_mask_150, max_gap=2)
+                            cf_only = score_composite_alert_matrices(
+                                w_cap_p, w_ffm_map[tau], c_sl, fcov, c_sl_f, fcov_f, g_mask_150, max_gap=2
+                            )
                             cf_only.update(
                                 {
                                     "catalog": cat_name,
@@ -1144,8 +1332,9 @@ def run_full_scoring(
                         w_d = w_dhm_cache[(d_key, ri)]
                         r_d = r_dhm_cache[(d_key, ri)]
                         for tau in FFM_THRESHOLDS:
-                            w_u = w_d | w_ffm_map[tau]
-                            res = score_boolean_matrix(w_u, c_sl, fcov, g_mask_150, max_gap=2)
+                            res = score_composite_alert_matrices(
+                                w_d, w_ffm_map[tau], c_sl, fcov, c_sl_f, fcov_f, g_mask_150, max_gap=2
+                            )
                             if res["recall_pct"] < max(r_d["recall_pct"], r_ffm_map[tau]["recall_pct"]) - 1e-6:
                                 raise AssertionError("Union recall violated monotonicity.")
                             g_row = dict(res)
@@ -1162,7 +1351,9 @@ def run_full_scoring(
                             cu_row = None
                             if d_key == "DHM_Oper":
                                 grid2d_rows.append(dict(g_row))
-                                res_cu = score_boolean_matrix(w_cap_p | w_u, c_sl, fcov, g_mask_150, max_gap=2)
+                                res_cu = score_composite_alert_matrices(
+                                    w_cap_p | w_d, w_ffm_map[tau], c_sl, fcov, c_sl_f, fcov_f, g_mask_150, max_gap=2
+                                )
                                 if res_cu["recall_pct"] < max(res["recall_pct"], r_cap_p["recall_pct"]) - 1e-6:
                                     raise AssertionError("Hybrid union recall violated monotonicity.")
                                 cu_row = dict(res_cu)
@@ -1239,12 +1430,15 @@ def run_full_scoring(
                 for u_name, base_k, thr_pairs in union_targets:
                     for thr_ord, t_val in thr_pairs:
                         if base_k == "FFM":
-                            w_m = w_ffm_map[t_val]
-                        elif (base_k, thr_ord) in w_dhm_cache:
-                            w_m = w_dhm_cache[(base_k, thr_ord)]
+                            res = score_composite_alert_matrices(
+                                w_cap_p, w_ffm_map[t_val], c_sl, fcov, c_sl_f, fcov_f, g_mask_150, max_gap=2
+                            )
                         else:
-                            w_m = make_w_matrix(data, base_k, thr_ord, lead_n, n_g)
-                        res = score_boolean_matrix(w_cap_p | w_m, c_sl, fcov, g_mask_150, max_gap=2)
+                            if (base_k, thr_ord) in w_dhm_cache:
+                                w_m = w_dhm_cache[(base_k, thr_ord)]
+                            else:
+                                w_m = make_w_matrix(data, base_k, thr_ord, lead_n, n_g)
+                            res = score_boolean_matrix(w_cap_p | w_m, c_sl, fcov, g_mask_150, max_gap=2)
                         if res["recall_pct"] < r_cap_p["recall_pct"] - 1e-6:
                             raise AssertionError(f"Union {u_name} recall below CAP baseline.")
                         lbl = f"tau={t_val:.2f}" if base_k == "FFM" else f"RP={t_val:g}"
@@ -1290,15 +1484,26 @@ def run_full_scoring(
             for lead_n in LEAD_WINDOWS_DAYS:
                 c_sl = prepare_catalog_slice(cat_df, gid_to_idx, eval_150, b0_s, b1_s, lead_n)
                 fcov = build_fcover(n_g, c_sl)
+                ffm_lead = min(lead_n, FFM_MAX_PRE_DAYS)
+                c_sl_f = prepare_catalog_slice(cat_df, gid_to_idx, eval_150, b0_s, b1_s, ffm_lead)
+                fcov_f = build_fcover(n_g, c_sl_f)
                 for sk, targ, lbl in pts:
                     w_mat = make_w_matrix(data, sk, targ, lead_n, n_g)
-                    res = score_boolean_matrix(w_mat, c_sl, fcov, g_mask_150, max_gap=2)
+                    if sk == "FFM":
+                        res = score_composite_alert_matrices(
+                            None, w_mat, c_sl, fcov, c_sl_f, fcov_f, g_mask_150, max_gap=2
+                        )
+                    else:
+                        res = score_boolean_matrix(w_mat, c_sl, fcov, g_mask_150, max_gap=2)
                     res.update(
                         {"catalog": cat_name, "benchmark": b_name, "lead_N": lead_n, "system": sk, "op_label": lbl}
                     )
                     lead_rows.append(res)
-                w_u = make_w_matrix(data, "DHM_Oper", 2, lead_n, n_g) | make_w_matrix(data, "FFM", 0.50, lead_n, n_g)
-                ru = score_boolean_matrix(w_u, c_sl, fcov, g_mask_150, max_gap=2)
+                w_dhm_l = make_w_matrix(data, "DHM_Oper", 2, lead_n, n_g)
+                w_ffm_l = make_w_matrix(data, "FFM", 0.50, lead_n, n_g)
+                ru = score_composite_alert_matrices(
+                    w_dhm_l, w_ffm_l, c_sl, fcov, c_sl_f, fcov_f, g_mask_150, max_gap=2
+                )
                 ru.update(
                     {
                         "catalog": cat_name,
@@ -1374,18 +1579,21 @@ def run_full_scoring(
             gm = np.isin(iso3_list, list(uset))
             c_sl = prepare_catalog_slice(cat_df, gid_to_idx, uset, "2021-01-01", "2025-12-31", 7)
             fcov = build_fcover(n_g, c_sl)
+            c_sl_f = prepare_catalog_slice(cat_df, gid_to_idx, uset, "2021-01-01", "2025-12-31", FFM_MAX_PRE_DAYS)
+            fcov_f = build_fcover(n_g, c_sl_f)
             for sk, targ, vname in (
                 ("CAP_Perm", 1, "CAP_Perm_All"),
                 ("CAP_Rest", 1, "CAP_Rest_All"),
                 ("DHM_Oper", 2, "DHM_Oper_RP2"),
                 ("FFM", 0.50, "FFM_050"),
             ):
-                r = score_boolean_matrix(make_w_matrix(data, sk, targ, 7, n_g), c_sl, fcov, gm, max_gap=2)
+                sl_use, fc_use = (c_sl_f, fcov_f) if sk == "FFM" else (c_sl, fcov)
+                r = score_boolean_matrix(make_w_matrix(data, sk, targ, 7, n_g), sl_use, fc_use, gm, max_gap=2)
                 audit_rows.append(
                     {
                         "audit_type": "Cohort_Exclusion",
                         "catalog": cat_name,
-                        "lead_N": 7,
+                        "lead_N": FFM_MAX_PRE_DAYS if sk == "FFM" else 7,
                         "variant": f"{uname}__{vname}",
                         **{k: r[k] for k in metric_keys},
                     }
@@ -1394,6 +1602,8 @@ def run_full_scoring(
     for cat_name, cat_df in catalogs:
         c_sl = prepare_catalog_slice(cat_df, gid_to_idx, eval_150, "2021-01-01", "2025-12-31", 7)
         fcov = build_fcover(n_g, c_sl)
+        c_sl_f = prepare_catalog_slice(cat_df, gid_to_idx, eval_150, "2021-01-01", "2025-12-31", FFM_MAX_PRE_DAYS)
+        fcov_f = build_fcover(n_g, c_sl_f)
         for gap_d in (0, 2, 7):
             for sk, targ, vname in (
                 ("CAP_Perm", 1, "CAP_Perm_All"),
@@ -1404,12 +1614,13 @@ def run_full_scoring(
                 ("GeoGLOWS_Retro_0d", 2, "GeoGLOWS_Retro_RP2"),
                 ("GloFAS_v5_0d", 2, "GloFAS_v5_RP2"),
             ):
-                r = score_boolean_matrix(make_w_matrix(data, sk, targ, 7, n_g), c_sl, fcov, g_mask_150, max_gap=gap_d)
+                sl_use, fc_use = (c_sl_f, fcov_f) if sk == "FFM" else (c_sl, fcov)
+                r = score_boolean_matrix(make_w_matrix(data, sk, targ, 7, n_g), sl_use, fc_use, g_mask_150, max_gap=gap_d)
                 audit_rows.append(
                     {
                         "audit_type": f"Episode_Gap_{gap_d}d",
                         "catalog": cat_name,
-                        "lead_N": 7,
+                        "lead_N": FFM_MAX_PRE_DAYS if sk == "FFM" else 7,
                         "variant": vname,
                         **{k: r[k] for k in metric_keys},
                     }
@@ -1420,6 +1631,10 @@ def run_full_scoring(
         fcov = build_fcover(n_g, c_sl)
         fcov_pre = build_pre_onset_fcover(n_g, c_sl)
         fcov_before = build_strictly_before_fcover(n_g, c_sl)
+        c_sl_f = prepare_catalog_slice(cat_df, gid_to_idx, eval_150, "2021-01-01", "2025-12-31", FFM_MAX_PRE_DAYS)
+        fcov_f = build_fcover(n_g, c_sl_f)
+        fcov_f_pre = build_pre_onset_fcover(n_g, c_sl_f)
+        fcov_f_before = build_strictly_before_fcover(n_g, c_sl_f)
         for sk, targ, vname in (
             ("CAP_Perm", 1, "CAP_Perm_All"),
             ("DHM_0d", 2, "DHM_0d_RP2"),
@@ -1429,10 +1644,35 @@ def run_full_scoring(
             ("GloFAS_v5_0d", 2, "GloFAS_v5_RP2"),
         ):
             w_i = make_w_matrix(data, sk, targ, 7, n_g)
-            r_prim, ew_rows = score_event_window_rules(
-                w_i, c_sl, fcov, fcov_pre, fcov_before, g_mask_150, cat_name, vname, lead_n=7, max_gap=2
-            )
-            audit_rows.extend(ew_rows)
+            if sk == "FFM":
+                r_prim, ew_rows = score_event_window_rules(
+                    w_i,
+                    c_sl_f,
+                    fcov_f,
+                    fcov_f_pre,
+                    fcov_f_before,
+                    g_mask_150,
+                    cat_name,
+                    vname,
+                    lead_n=FFM_MAX_PRE_DAYS,
+                    max_gap=2,
+                )
+                audit_rows.extend(ew_rows)
+                r_f7 = score_boolean_matrix(w_i, c_sl, fcov, g_mask_150, max_gap=2)
+                audit_rows.append(
+                    {
+                        "audit_type": "Event_Window_Rule",
+                        "catalog": cat_name,
+                        "lead_N": 7,
+                        "variant": f"{vname}__Uniform_[start-7d,end]",
+                        **{k: r_f7[k] for k in metric_keys},
+                    }
+                )
+            else:
+                r_prim, ew_rows = score_event_window_rules(
+                    w_i, c_sl, fcov, fcov_pre, fcov_before, g_mask_150, cat_name, vname, lead_n=7, max_gap=2
+                )
+                audit_rows.extend(ew_rows)
             if sk == "DHM_Oper":
                 w_iss = make_issue_indexed_w_matrix(data, sk, targ, 7, n_g)
                 r_iss = score_boolean_matrix(w_iss, c_sl, fcov, g_mask_150, max_gap=2)
@@ -1454,6 +1694,34 @@ def run_full_scoring(
                         **{k: r_iss[k] for k in metric_keys},
                     }
                 )
+
+        # Hybrid FFM window sensitivity: primary [-1d, end], onset-only [-1d, 0d], and uniform [-7d, end]
+        w_cap_ew = make_w_matrix(data, "CAP_Perm", 1, 7, n_g)
+        w_dhm_ew = make_w_matrix(data, "DHM_Oper", 2, 7, n_g)
+        w_ffm_ew = make_w_matrix(data, "FFM", 0.50, 7, n_g)
+        c_sl_f_onset = dict(c_sl_f)
+        c_sl_f_onset["ev_w1"] = c_sl_f["ev_s"]
+        r_hyb_prim = score_composite_alert_matrices(
+            w_cap_ew | w_dhm_ew, w_ffm_ew, c_sl, fcov, c_sl_f, fcov_f, g_mask_150, max_gap=2
+        )
+        r_hyb_onset = score_composite_alert_matrices(
+            w_cap_ew | w_dhm_ew, w_ffm_ew, c_sl, fcov, c_sl_f_onset, fcov_f_pre, g_mask_150, max_gap=2
+        )
+        r_hyb_unif7 = score_boolean_matrix(w_cap_ew | w_dhm_ew | w_ffm_ew, c_sl, fcov, g_mask_150, max_gap=2)
+        for v_lbl, r_h in (
+            ("CAP_Perm_U_DHM_Oper_U_FFM050__Primary_FFM[start-1d,end]", r_hyb_prim),
+            ("CAP_Perm_U_DHM_Oper_U_FFM050__FFMOnset_[start-1d,start]", r_hyb_onset),
+            ("CAP_Perm_U_DHM_Oper_U_FFM050__Uniform_[start-7d,end]", r_hyb_unif7),
+        ):
+            audit_rows.append(
+                {
+                    "audit_type": "Event_Window_Rule",
+                    "catalog": cat_name,
+                    "lead_N": 7,
+                    "variant": v_lbl,
+                    **{k: r_h[k] for k in metric_keys},
+                }
+            )
 
         c_sl24 = prepare_catalog_slice(cat_df, gid_to_idx, eval_150, "2024-04-16", "2025-12-31", 7)
         fcov24 = build_fcover(n_g, c_sl24)
@@ -1491,16 +1759,22 @@ def run_full_scoring(
         for n_sw in (0, 3, 7, 15):
             c_sl_sw = prepare_catalog_slice(cat_df, gid_to_idx, eval_150, "2021-01-01", "2025-12-31", n_sw)
             fcov_sw = build_fcover(n_g, c_sl_sw)
+            c_sl_sw_f = prepare_catalog_slice(
+                cat_df, gid_to_idx, eval_150, "2021-01-01", "2025-12-31", min(n_sw, FFM_MAX_PRE_DAYS)
+            )
+            fcov_sw_f = build_fcover(n_g, c_sl_sw_f)
             w_cap_sw = make_w_matrix(data, "CAP_Perm", 1, n_sw, n_g)
             w_dhm_sw = make_w_matrix(data, "DHM_Oper", 2, n_sw, n_g)
             w_ffm_sw = make_w_matrix(data, "FFM", 0.50, n_sw, n_g)
-            for vname, w_sw in (
-                ("CAP_Perm_All", w_cap_sw),
-                ("DHM_Oper_RP2", w_dhm_sw),
-                ("FFM_050", w_ffm_sw),
-                ("CAP_Perm_U_DHM_Oper_U_FFM050", w_cap_sw | w_dhm_sw | w_ffm_sw),
+            for vname, w_o_sw, w_f_sw in (
+                ("CAP_Perm_All", w_cap_sw, None),
+                ("DHM_Oper_RP2", w_dhm_sw, None),
+                ("FFM_050", None, w_ffm_sw),
+                ("CAP_Perm_U_DHM_Oper_U_FFM050", w_cap_sw | w_dhm_sw, w_ffm_sw),
             ):
-                r_sw = score_boolean_matrix(w_sw, c_sl_sw, fcov_sw, g_mask_150, max_gap=2)
+                r_sw = score_composite_alert_matrices(
+                    w_o_sw, w_f_sw, c_sl_sw, fcov_sw, c_sl_sw_f, fcov_sw_f, g_mask_150, max_gap=2
+                )
                 audit_rows.append(
                     {
                         "audit_type": "Lead_Window_Sweep",
@@ -1557,11 +1831,17 @@ def compute_fine_ffm_pr_curves(
 
     slices: dict[tuple[str, str], dict[str, Any]] = {}
     fcovers: dict[tuple[str, str], np.ndarray] = {}
+    slices_ffm: dict[tuple[str, str], dict[str, Any]] = {}
+    fcovers_ffm: dict[tuple[str, str], np.ndarray] = {}
+    ffm_lead = min(lead_n, FFM_MAX_PRE_DAYS)
     for cat_name, cat_df in (("Without_GS", cat_a), ("With_GS", cat_b), ("GS_Media_Only", cat_gs_only)):
         for bm_name, b_start, b_end in BENCHMARKS:
             sl = prepare_catalog_slice(cat_df, gid_to_idx, eval_150, b_start, b_end, lead_n=lead_n)
             slices[(cat_name, bm_name)] = sl
             fcovers[(cat_name, bm_name)] = build_fcover(n_g, sl)
+            sl_f = prepare_catalog_slice(cat_df, gid_to_idx, eval_150, b_start, b_end, lead_n=ffm_lead)
+            slices_ffm[(cat_name, bm_name)] = sl_f
+            fcovers_ffm[(cat_name, bm_name)] = build_fcover(n_g, sl_f)
 
     taus = sorted(
         {round(float(x), 2) for x in np.arange(0.05, 0.991, 0.02)}
@@ -1573,62 +1853,253 @@ def compute_fine_ffm_pr_curves(
         rp_i: make_w_matrix(data, "DHM_Oper", rp_i, lead_n=lead_n, n_g=n_g)
         for rp_i in range(1, len(RETURN_PERIODS) + 1)
     }
-    w_dhm_q2 = dhm_oper_mats[2]
     ffm_mats = {tau: (data["ffm_prob"] >= tau) for tau in taus}
 
-    curve_rows: list[dict[str, Any]] = []
+    g_idx = np.flatnonzero(g_mask_150)
+
+    # Precompute benchmark window spans & per-catalog detection masks for fast exact composite scoring.
+    bm_bounds: dict[str, tuple[int, int, int, int, int]] = {}
+    for bm_name, _, _ in BENCHMARKS:
+        sl_o = slices[("Without_GS", bm_name)]
+        sl_f = slices_ffm[("Without_GS", bm_name)]
+        w0_o, w1 = sl_o["w_min"], sl_o["b1"]
+        w0_f = sl_f["w_min"]
+        w0 = min(w0_o, w0_f)
+        bm_bounds[bm_name] = (w0, w0_o, w0_f, w1, w1 - w0 + 1)
+
+    def _empty_score(n_ev: int) -> dict[str, Any]:
+        return {
+            "n_events": n_ev,
+            "tp_ev": 0,
+            "tp_pre": 0,
+            "recall_pct": 0.0,
+            "pre_recall_pct": 0.0,
+            "pop_recall_pct": 0.0,
+            "n_warn_days": 0,
+            "n_episodes": 0,
+            "tp_ep": 0,
+            "fp_ep": 0,
+            "precision_pct": np.nan,
+            "f1_pct": np.nan,
+        }
+
+    # Pre-slice FFM sub-matrices and precompute FFM event detections once per (tau, catalog, benchmark).
+    ffm_sub: dict[tuple[float, str], np.ndarray] = {}
+    ffm_det_cache: dict[tuple[float, str, str], tuple[np.ndarray, np.ndarray]] = {}
     for tau in taus:
-        wf = ffm_mats[tau]
-        combos = (
-            ("FFM_fine", wf),
-            ("CAP_Perm_U_FFM_fine", w_cap_perm | wf),
-            ("DHM_Oper_Q2_U_FFM_fine", w_dhm_q2 | wf),
-            ("CAP_Perm_U_DHM_Oper_Q2_U_FFM_fine", w_cap_perm | w_dhm_q2 | wf),
-        )
-        for sys_name, wm in combos:
-            for (cat_name, bm_name), sl in slices.items():
-                sc = score_boolean_matrix(wm, sl, fcovers[(cat_name, bm_name)], g_mask_150, max_gap=2)
-                curve_rows.append(
-                    {
-                        "catalog": cat_name,
-                        "benchmark": bm_name,
-                        "system": sys_name,
-                        "tau": tau,
-                        "rp": 2 if "Q2" in sys_name else np.nan,
-                        "thr_label": f"tau={tau:.2f}",
-                        **sc,
-                    }
+        wf_g = ffm_mats[tau][g_idx]
+        for bm_name, _, _ in BENCHMARKS:
+            w0, _, w0_f, w1, win_len = bm_bounds[bm_name]
+            w_f_win = wf_g[:, w0 : w1 + 1]
+            if w0_f > w0:
+                w_f_win = w_f_win.copy()
+                w_f_win[:, : (w0_f - w0)] = False
+            ffm_sub[(tau, bm_name)] = w_f_win
+            flat_f = np.flatnonzero(w_f_win)
+            for cat_name in ("Without_GS", "With_GS", "GS_Media_Only"):
+                ffm_det_cache[(tau, cat_name, bm_name)] = _detect_events_from_flat(
+                    flat_f, g_idx, n_g, w0, win_len, slices_ffm[(cat_name, bm_name)]
                 )
 
-    pareto_rows: list[dict[str, Any]] = []
-    rp_options: list[tuple[int, str, np.ndarray | None]] = [(0, "off", None)] + [
-        (rp_i, str(RETURN_PERIODS[rp_i - 1]), dhm_oper_mats[rp_i]) for rp_i in range(1, len(RETURN_PERIODS) + 1)
-    ]
-    for mode_name, base_cap in (
-        ("DHM_Oper_U_FFM_Pareto_fine", None),
-        ("CAP_Perm_U_DHM_Oper_U_FFM_Pareto_fine", w_cap_perm),
-    ):
-        grid_by_slice: dict[tuple[str, str], list[dict[str, Any]]] = {
-            k: [] for k in slices if k[0] != "GS_Media_Only"
-        }
-        for rp_i, rp_lbl, w_dhm in rp_options:
-            for tau in taus:
-                wm = ffm_mats[tau] if w_dhm is None else (w_dhm | ffm_mats[tau])
-                if base_cap is not None:
-                    wm = base_cap | wm
-                for key in grid_by_slice:
-                    sc = score_boolean_matrix(wm, slices[key], fcovers[key], g_mask_150, max_gap=2)
-                    grid_by_slice[key].append(
+    other_det_cache: dict[tuple[str, str, str], tuple[np.ndarray, np.ndarray]] = {}
+    other_sub_cache: dict[tuple[str, str], np.ndarray] = {}
+
+    def _prepare_other(other_id: str, w_other: np.ndarray, cat_names: tuple[str, ...]) -> None:
+        wo_g = w_other[g_idx]
+        for bm_name, _, _ in BENCHMARKS:
+            if (other_id, bm_name) not in other_sub_cache:
+                w0, w0_o, _, w1, win_len = bm_bounds[bm_name]
+                w_o_win = wo_g[:, w0 : w1 + 1]
+                if w0_o > w0:
+                    w_o_win = w_o_win.copy()
+                    w_o_win[:, : (w0_o - w0)] = False
+                other_sub_cache[(other_id, bm_name)] = w_o_win
+                flat_o = np.flatnonzero(w_o_win)
+                for cat_name in cat_names:
+                    other_det_cache[(other_id, cat_name, bm_name)] = _detect_events_from_flat(
+                        flat_o, g_idx, n_g, w0, win_len, slices[(cat_name, bm_name)]
+                    )
+
+    def _score_pair_across_catalogs(
+        other_id: str | None,
+        tau: float,
+        bm_name: str,
+        cat_names: tuple[str, ...],
+        max_gap: int = 2,
+    ) -> dict[str, dict[str, Any]]:
+        """Score (other_id, tau) across all catalogs in ``cat_names`` with one episode collapse."""
+        if len(g_idx) == 0:
+            return {c: _empty_score(slices[(c, bm_name)]["n_events"]) for c in cat_names}
+        w0, _, w0_f, w1, win_len = bm_bounds[bm_name]
+        w_f_win = ffm_sub[(tau, bm_name)]
+        if other_id is None:
+            flat_u = np.flatnonzero(w_f_win)
+            n_warn_days = len(flat_u)
+            if n_warn_days == 0:
+                return {c: _empty_score(slices[(c, bm_name)]["n_events"]) for c in cat_names}
+            gi_sub, di_rel = np.divmod(flat_u, win_len)
+            gi = g_idx[gi_sub]
+            di = di_rel + w0
+            is_new_ep = np.empty(n_warn_days, dtype=bool)
+            is_new_ep[0] = True
+            is_new_ep[1:] = (gi_sub[1:] != gi_sub[:-1]) | ((di_rel[1:] - di_rel[:-1]) > (max_gap + 1))
+            ep_ids = np.cumsum(is_new_ep) - 1
+            n_ep = int(ep_ids[-1]) + 1
+            out: dict[str, dict[str, Any]] = {}
+            for c in cat_names:
+                sl_f = slices_ffm[(c, bm_name)]
+                n_ev = sl_f["n_events"]
+                det, pre_det = ffm_det_cache[(tau, c, bm_name)]
+                tp_ev = int(det.sum())
+                tp_pre = int(pre_det.sum())
+                ev_pop = sl_f["ev_pop"]
+                tot_pop = float(ev_pop.sum())
+                pop_rec = (float(ev_pop[det].sum()) / tot_pop * 100.0) if tot_pop > 0 else 0.0
+                day_hit = fcovers_ffm[(c, bm_name)][gi, di]
+                ep_tp = np.zeros(n_ep, dtype=bool)
+                np.logical_or.at(ep_tp, ep_ids, day_hit)
+                tp_ep = int(ep_tp.sum())
+                if (tp_ev == 0) != (tp_ep == 0):
+                    raise AssertionError(f"Bipartite consistency mismatch: tp_ev={tp_ev}, tp_ep={tp_ep}")
+                rec_pct = 100.0 * tp_ev / max(1, n_ev)
+                pre_pct = 100.0 * tp_pre / max(1, n_ev)
+                prec_pct = 100.0 * tp_ep / max(1, n_ep)
+                f1_pct = (2.0 * rec_pct * prec_pct / (rec_pct + prec_pct)) if (rec_pct + prec_pct) > 0 else 0.0
+                out[c] = {
+                    "n_events": n_ev,
+                    "tp_ev": tp_ev,
+                    "tp_pre": tp_pre,
+                    "recall_pct": round(rec_pct, 3),
+                    "pre_recall_pct": round(pre_pct, 3),
+                    "pop_recall_pct": round(pop_rec, 3),
+                    "n_warn_days": n_warn_days,
+                    "n_episodes": n_ep,
+                    "tp_ep": tp_ep,
+                    "fp_ep": n_ep - tp_ep,
+                    "precision_pct": round(prec_pct, 3),
+                    "f1_pct": round(f1_pct, 3),
+                }
+            return out
+
+        w_o_win = other_sub_cache[(other_id, bm_name)]
+        flat_u = np.flatnonzero(w_o_win | w_f_win)
+        n_warn_days = len(flat_u)
+        if n_warn_days == 0:
+            return {c: _empty_score(slices[(c, bm_name)]["n_events"]) for c in cat_names}
+        gi_sub, di_rel = np.divmod(flat_u, win_len)
+        gi = g_idx[gi_sub]
+        di = di_rel + w0
+        in_o = w_o_win[gi_sub, di_rel]
+        in_f = w_f_win[gi_sub, di_rel]
+        is_new_ep = np.empty(n_warn_days, dtype=bool)
+        is_new_ep[0] = True
+        is_new_ep[1:] = (gi_sub[1:] != gi_sub[:-1]) | ((di_rel[1:] - di_rel[:-1]) > (max_gap + 1))
+        ep_ids = np.cumsum(is_new_ep) - 1
+        n_ep = int(ep_ids[-1]) + 1
+        out = {}
+        for c in cat_names:
+            sl_o = slices[(c, bm_name)]
+            n_ev = sl_o["n_events"]
+            det_o, pre_o = other_det_cache[(other_id, c, bm_name)]
+            det_f, pre_f = ffm_det_cache[(tau, c, bm_name)]
+            det = det_o | det_f
+            pre_det = pre_o | pre_f
+            tp_ev = int(det.sum())
+            tp_pre = int(pre_det.sum())
+            ev_pop = sl_o["ev_pop"]
+            tot_pop = float(ev_pop.sum())
+            pop_rec = (float(ev_pop[det].sum()) / tot_pop * 100.0) if tot_pop > 0 else 0.0
+            day_hit = (in_o & fcovers[(c, bm_name)][gi, di]) | (in_f & fcovers_ffm[(c, bm_name)][gi, di])
+            ep_tp = np.zeros(n_ep, dtype=bool)
+            np.logical_or.at(ep_tp, ep_ids, day_hit)
+            tp_ep = int(ep_tp.sum())
+            if (tp_ev == 0) != (tp_ep == 0):
+                raise AssertionError(f"Composite bipartite consistency mismatch: tp_ev={tp_ev}, tp_ep={tp_ep}")
+            rec_pct = 100.0 * tp_ev / max(1, n_ev)
+            pre_pct = 100.0 * tp_pre / max(1, n_ev)
+            prec_pct = 100.0 * tp_ep / max(1, n_ep)
+            f1_pct = (2.0 * rec_pct * prec_pct / (rec_pct + prec_pct)) if (rec_pct + prec_pct) > 0 else 0.0
+            out[c] = {
+                "n_events": n_ev,
+                "tp_ev": tp_ev,
+                "tp_pre": tp_pre,
+                "recall_pct": round(rec_pct, 3),
+                "pre_recall_pct": round(pre_pct, 3),
+                "pop_recall_pct": round(pop_rec, 3),
+                "n_warn_days": n_warn_days,
+                "n_episodes": n_ep,
+                "tp_ep": tp_ep,
+                "fp_ep": n_ep - tp_ep,
+                "precision_pct": round(prec_pct, 3),
+                "f1_pct": round(f1_pct, 3),
+            }
+        return out
+
+    all_cats = ("Without_GS", "With_GS", "GS_Media_Only")
+    pareto_cats = ("Without_GS", "With_GS")
+    _prepare_other("CAP", w_cap_perm, all_cats)
+    _prepare_other("DHM_2", dhm_oper_mats[2], all_cats)
+    _prepare_other("CAP_DHM_2", w_cap_perm | dhm_oper_mats[2], all_cats)
+    for rp_i in range(1, len(RETURN_PERIODS) + 1):
+        if rp_i != 2:
+            _prepare_other(f"DHM_{rp_i}", dhm_oper_mats[rp_i], pareto_cats)
+            _prepare_other(f"CAP_DHM_{rp_i}", w_cap_perm | dhm_oper_mats[rp_i], pareto_cats)
+
+    curve_rows: list[dict[str, Any]] = []
+    combos: tuple[tuple[str, str | None], ...] = (
+        ("FFM_fine", None),
+        ("CAP_Perm_U_FFM_fine", "CAP"),
+        ("DHM_Oper_Q2_U_FFM_fine", "DHM_2"),
+        ("CAP_Perm_U_DHM_Oper_Q2_U_FFM_fine", "CAP_DHM_2"),
+    )
+    for tau in taus:
+        for sys_name, other_id in combos:
+            for bm_name, _, _ in BENCHMARKS:
+                sc_by_cat = _score_pair_across_catalogs(other_id, tau, bm_name, all_cats, max_gap=2)
+                for cat_name in all_cats:
+                    curve_rows.append(
                         {
-                            "catalog": key[0],
-                            "benchmark": key[1],
-                            "system": mode_name,
+                            "catalog": cat_name,
+                            "benchmark": bm_name,
+                            "system": sys_name,
                             "tau": tau,
-                            "rp": RETURN_PERIODS[rp_i - 1] if rp_i > 0 else np.nan,
-                            "thr_label": f"RP={rp_lbl}|tau={tau:.2f}",
-                            **sc,
+                            "rp": 2 if "Q2" in sys_name else np.nan,
+                            "thr_label": f"tau={tau:.2f}",
+                            **sc_by_cat[cat_name],
                         }
                     )
+
+    pareto_rows: list[dict[str, Any]] = []
+    rp_options: list[tuple[int, str]] = [(0, "off")] + [
+        (rp_i, str(RETURN_PERIODS[rp_i - 1])) for rp_i in range(1, len(RETURN_PERIODS) + 1)
+    ]
+    for mode_name, has_cap in (
+        ("DHM_Oper_U_FFM_Pareto_fine", False),
+        ("CAP_Perm_U_DHM_Oper_U_FFM_Pareto_fine", True),
+    ):
+        grid_by_slice: dict[tuple[str, str], list[dict[str, Any]]] = {
+            (c, bm_name): [] for c in pareto_cats for bm_name, _, _ in BENCHMARKS
+        }
+        for rp_i, rp_lbl in rp_options:
+            if not has_cap:
+                other_id = None if rp_i == 0 else f"DHM_{rp_i}"
+            else:
+                other_id = "CAP" if rp_i == 0 else f"CAP_DHM_{rp_i}"
+            for tau in taus:
+                for bm_name, _, _ in BENCHMARKS:
+                    sc_by_cat = _score_pair_across_catalogs(other_id, tau, bm_name, pareto_cats, max_gap=2)
+                    for cat_name in pareto_cats:
+                        grid_by_slice[(cat_name, bm_name)].append(
+                            {
+                                "catalog": cat_name,
+                                "benchmark": bm_name,
+                                "system": mode_name,
+                                "tau": tau,
+                                "rp": RETURN_PERIODS[rp_i - 1] if rp_i > 0 else np.nan,
+                                "thr_label": f"RP={rp_lbl}|tau={tau:.2f}",
+                                **sc_by_cat[cat_name],
+                            }
+                        )
         for grows in grid_by_slice.values():
             pareto_rows.extend(extract_pareto_frontier(grows))
 

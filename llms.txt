@@ -1,6 +1,6 @@
 # cap-alerting-coverage
 
-> Reproducible Apache-2.0 benchmark code and verification suite for *"Global flood models can close nearly two-thirds of the warning gap"* (2026). Evaluates official Common Alerting Protocol (CAP) flood warnings against Google Distributed Hydrological Model (DHM), Google Flash Flood Model (FFM), Copernicus GloFAS v5, and GEOGLOWS v2 across 150 evaluated (185 audited) jurisdictions over 2021–2025.
+> Reproducible Apache-2.0 benchmark code and verification suite for *"Global forecasts can close most of the flood warning gap"* (2026). Evaluates official Common Alerting Protocol (CAP) flood warnings against Google Distributed Hydrological Model (DHM), Google Flash Flood Model (FFM, `[start − 1 d, end]` horizon-matched window), Copernicus GloFAS v5, and GEOGLOWS v2 across 150 evaluated (185 audited) jurisdictions over 2021–2025.
 
 ## Agent & Engineering Guides
 - [AGENTS.md](AGENTS.md): Complete machine-readable pipeline DAG, module ownership map, strict I/O schemas, mathematical invariants, verification commands, and clean-room guardrails.

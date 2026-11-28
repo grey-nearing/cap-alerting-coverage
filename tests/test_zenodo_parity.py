@@ -45,7 +45,7 @@ def test_zenodo_checksums_and_schemas():
     root = _zenodo_root()
     if (root / "SHA256SUMS.txt").exists():
         verified = verify_zenodo_checksums(root)
-        assert len(verified) == 54
+        assert len(verified) == 55
 
     # Validate event catalogs (strictly non-redistribution & schema compliant)
     for fname in (
@@ -131,22 +131,22 @@ def test_zenodo_full_tier1_reproduction_and_parity(tmp_path: Path):
         )
         assert rc_par == 0
 
-    # Verify country-level paired Wilcoxon, DEFF, and clustered 95% CIs (Methods Section 6)
+    # Verify country-level paired Wilcoxon, DEFF, and clustered 95% CIs (Methods Section 6, FFM 1-day window)
     cl_df = pd.read_csv(out_res / "country_clustered_inference.csv")
     hyb_a = cl_df[(cl_df["catalog"] == "Without_GS") & (cl_df["system"] == "CAP_Perm_U_DHM_Oper_U_FFM050")].iloc[0]
     hyb_b = cl_df[(cl_df["catalog"] == "With_GS") & (cl_df["system"] == "CAP_Perm_U_DHM_Oper_U_FFM050")].iloc[0]
-    assert int(hyb_a["n_countries"]) == 139 and int(hyb_a["n_improved"]) == 126
-    assert abs(float(hyb_a["median_pp_gain"]) - 50.0) < 0.05
-    assert abs(float(hyb_a["wilcoxon_p"]) - 1.994e-22) < 1e-23
+    assert int(hyb_a["n_countries"]) == 139 and int(hyb_a["n_improved"]) == 123
+    assert abs(float(hyb_a["median_pp_gain"]) - 48.35) < 0.05
+    assert abs(float(hyb_a["wilcoxon_p"]) - 6.247e-22) < 1e-22
     assert abs(float(hyb_a["baseline_deff"]) - 116.1) < 0.15
     assert abs(float(hyb_a["baseline_ci_low_pct"]) - 24.82) < 0.05
     assert abs(float(hyb_a["baseline_ci_high_pct"]) - 51.05) < 0.05
-    assert abs(float(hyb_a["candidate_ci_low_pct"]) - 70.95) < 0.05
-    assert abs(float(hyb_a["candidate_ci_high_pct"]) - 85.23) < 0.05
-    assert abs(float(hyb_a["gap_closed_ci_low_pct"]) - 58.35) < 0.05
-    assert abs(float(hyb_a["gap_closed_ci_high_pct"]) - 72.33) < 0.05
+    assert abs(float(hyb_a["candidate_ci_low_pct"]) - 67.73) < 0.05
+    assert abs(float(hyb_a["candidate_ci_high_pct"]) - 83.63) < 0.05
+    assert abs(float(hyb_a["gap_closed_ci_low_pct"]) - 53.96) < 0.05
+    assert abs(float(hyb_a["gap_closed_ci_high_pct"]) - 69.51) < 0.05
 
-    assert int(hyb_b["n_countries"]) == 149 and int(hyb_b["n_improved"]) == 134
-    assert abs(float(hyb_b["median_pp_gain"]) - 48.0) < 0.05
-    assert abs(float(hyb_b["wilcoxon_p"]) - 9.785e-24) < 1e-24
+    assert int(hyb_b["n_countries"]) == 149 and int(hyb_b["n_improved"]) == 133
+    assert abs(float(hyb_b["median_pp_gain"]) - 45.18) < 0.05
+    assert abs(float(hyb_b["wilcoxon_p"]) - 1.430e-23) < 1e-23
     assert abs(float(hyb_b["baseline_deff"]) - 288.4) < 0.15

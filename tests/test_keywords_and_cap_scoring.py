@@ -20,6 +20,8 @@ from cap_alerting_coverage.scoring import (
     build_pre_onset_fcover,
     build_strictly_before_fcover,
     prepare_catalog_slice,
+    score_boolean_matrix,
+    score_composite_alert_matrices,
     score_event_window_rules,
 )
 
@@ -180,3 +182,77 @@ def test_event_window_rule_episode_precision_pre_onset_and_strictly_before():
     assert edge_pre[0, 0] and edge_pre[1, 10]
     assert int(edge_pre.sum()) == 2
     assert not np.any(edge_before)
+
+
+def test_score_composite_alert_matrices_respects_1d_ffm_vs_7d_river():
+    """FFM alerts at start-3d are rejected while start-1d and CAP/river start-5d are credited."""
+    gid_to_idx = {"TST.1_1": 0, "TST.2_1": 1, "TST.3_1": 2}
+    n_g = len(gid_to_idx)
+    g_mask = np.ones(n_g, dtype=bool)
+
+    cat_df = pd.DataFrame(
+        [
+            {
+                "event_id": "E1",
+                "gid_1": "TST.1_1",
+                "country_iso3": "TST",
+                "start_date": "2022-04-10",
+                "end_date": "2022-04-12",
+                "has_idmc": True,
+                "has_montandon": False,
+                "has_groundsource": False,
+                "waterfall_pop": 100.0,
+            },
+            {
+                "event_id": "E2",
+                "gid_1": "TST.2_1",
+                "country_iso3": "TST",
+                "start_date": "2022-05-10",
+                "end_date": "2022-05-12",
+                "has_idmc": True,
+                "has_montandon": False,
+                "has_groundsource": False,
+                "waterfall_pop": 200.0,
+            },
+            {
+                "event_id": "E3",
+                "gid_1": "TST.3_1",
+                "country_iso3": "TST",
+                "start_date": "2022-06-10",
+                "end_date": "2022-06-12",
+                "has_idmc": True,
+                "has_montandon": False,
+                "has_groundsource": False,
+                "waterfall_pop": 300.0,
+            },
+        ]
+    )
+    sl_7 = prepare_catalog_slice(cat_df, gid_to_idx, {"TST"}, "2021-01-01", "2025-12-31", lead_n=7)
+    sl_1 = prepare_catalog_slice(cat_df, gid_to_idx, {"TST"}, "2021-01-01", "2025-12-31", lead_n=1)
+    fc_7 = build_fcover(n_g, sl_7)
+    fc_1 = build_fcover(n_g, sl_1)
+
+    w_other = np.zeros((n_g, D_TOTAL), dtype=bool)
+    w_ffm = np.zeros((n_g, D_TOTAL), dtype=bool)
+
+    # E1: CAP/river fires at start-5d -> credited
+    w_other[0, date_to_idx("2022-04-05")] = True
+    # E2: FFM fires ONLY at start-3d -> must NOT be credited under 1d FFM rule (counts as FP episode)
+    w_ffm[1, date_to_idx("2022-05-07")] = True
+    # E3: FFM fires at start-1d -> credited
+    w_ffm[2, date_to_idx("2022-06-09")] = True
+
+    res = score_composite_alert_matrices(w_other, w_ffm, sl_7, fc_7, sl_1, fc_1, g_mask, max_gap=2)
+    assert res["n_events"] == 3
+    assert res["tp_ev"] == 2
+    assert res["tp_pre"] == 2
+    assert res["n_episodes"] == 3
+    assert res["tp_ep"] == 2
+    assert res["recall_pct"] == pytest.approx(66.667, abs=1e-3)
+    assert res["precision_pct"] == pytest.approx(66.667, abs=1e-3)
+    assert res["pop_recall_pct"] == pytest.approx(100.0 * 400.0 / 600.0, abs=1e-3)
+
+    # Compare against uniform 7-day window: would over-credit E2
+    res_uniform = score_boolean_matrix(w_other | w_ffm, sl_7, fc_7, g_mask, max_gap=2)
+    assert res_uniform["tp_ev"] == 3
+    assert res_uniform["tp_ep"] == 3
