@@ -29,9 +29,9 @@ This repository quantifies the global subnational coverage gap in official **Com
 | System | Catalog A Event Recall (`N=5,894`) | Catalog A Pop. Recall (`52.66M`) | Catalog A Gap Closed | Catalog B Event Recall (`N=27,127`) | Catalog B Gap Closed |
 |---|---:|---:|---:|---:|---:|
 | **Official CAP (Broad Flood-and-Storm)** | `38.6%` (`2,277`) | `59.4%` | — | `45.6%` (`12,371`) | — |
-| **Official CAP (Explicit Flood-Coded)** | `7.2%` (`423`) | `28.9%` | — | `8.5%` (`2,300`) | — |
-| **CAP ∪ Google DHM (0–7d, Q2yr)** | `60.2%` (`3,551`) | `84.7%` | `35.2%` | `64.4%` (`17,458`) | `34.5%` |
-| **CAP ∪ Google FFM (0–24h, τ=0.50)** | `74.4%` (`4,383`) | `86.4%` | `58.2%` | `82.1%` (`22,276`) | `67.1%` |
+| **Official CAP (Explicit Flood-Coded)** | `7.2%` (`423`) | `28.9%` | — | `10.7%` (`2,895`) | — |
+| **CAP ∪ Google DHM (0–7d, Q2yr)** | `60.8%` (`3,584`) | `84.6%` | `36.1%` | `62.4%` (`16,927`) | `30.9%` |
+| **CAP ∪ Google FFM (0–24h, τ=0.50)** | `70.7%` (`4,168`) | `81.9%` | `52.3%` | `80.4%` (`21,823`) | `64.1%` |
 | **CAP ∪ DHM (0–7d) ∪ FFM (0–24h) [Hybrid Full]** | **`78.7%`** (`4,639`) | **`90.0%`** | **`65.3%`** | **`85.2%`** (`23,122`) | **`72.9%`** |
 
 ### Two-Tier Reproducibility Architecture
@@ -122,14 +122,14 @@ cap-alerting-coverage/
 ├── src/cap_alerting_coverage/
 │   ├── config.py                   # Constants, cohorts, thresholds, and portable path resolution
 │   ├── scoring.py                  # Exact benchmark scoring, PR curves, Pareto front, lead sweeps, audits
-│   ├── manuscript_outputs.py       # Manuscript & Extended Data tables, exact McNemar tests, figure orchestration
+│   ├── manuscript_outputs.py       # Manuscript & Extended Data tables, McNemar & country-clustered inference, figures
 │   ├── figure_style.py             # Shared Nature typography, colorblind-safe palette, Robinson CRS & PDF/SVG/PNG export
 │   ├── figure_fleet.py             # All 11 single-composite publication figures (Figs. 1–5, ED Figs. 1–5, Supp. Fig. 1)
-│   ├── gauge_verification.py       # Stream-gauge NSE/ECDF/IQR summaries & Extended Data Table 5 compilation
+│   ├── gauge_verification.py       # Stream-gauge NSE/ECDF/IQR summaries & Extended Data Table 4 compilation
 │   ├── validation_audit.py         # Deterministic de-identified N=400 validation tabulation
 │   ├── keywords.py                 # Multilingual flood/storm regex classifiers & OASIS score64
 │   ├── clustering.py               # Episode collapsing, population waterfall, GID_1 clustering
-│   ├── stats_utils.py              # Exact McNemar, Clopper-Pearson, Wilson, Wald, bootstrap helpers, LP3
+│   ├── stats_utils.py              # Exact McNemar, Fisher exact, country Wilcoxon, DEFF, clustered bootstrap CIs, LP3
 │   ├── schemas.py                  # Strict I/O schema & non-redistribution privacy validators
 │   ├── zenodo_fetch.py             # Zenodo archive downloader, safe ZIP extractor & SHA-256 verifier
 │   ├── cli.py                      # Unified `cap-gap` / `cap-alerting-coverage` CLI
